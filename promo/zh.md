@@ -1,7 +1,7 @@
 # MOA Spin Siege — 上线宣传文案（简体中文）
 
 > **发布前**
-> - 把 `https://cm-jccho.github.io/moa-spin-siege/` 替换成实际可玩的链接。
+> - 播放链接已填好：`https://cm-jccho.github.io/moa-spin-siege/`。
 > - 配图用 `browser/slot-defense-desktop.png` 或手机版截图。
 > - Instagram 暂缓至 11/21 稳定期之后 —— 本次上线只发 **Threads（@moa_daily80）** 与 **X（@jc_moa80）**。
 

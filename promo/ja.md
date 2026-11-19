@@ -1,7 +1,7 @@
 # MOA Spin Siege — ローンチ告知文（日本語）
 
 > **投稿前に**
-> - `https://cm-jccho.github.io/moa-spin-siege/` を実際のプレイURLに差し替えてください。
+> - プレイURLは `https://cm-jccho.github.io/moa-spin-siege/` で確定済みです。
 > - 画像は `browser/slot-defense-desktop.png`（またはモバイル版）を添付。
 > - Instagram は 11/21 の安定化期間まで保留 —— 今回は **Threads（@moa_daily80）** と **X（@jc_moa80）** のみ。
 

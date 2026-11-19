@@ -1,7 +1,7 @@
 # MOA Spin Siege — launch copy (English)
 
 > **Before posting**
-> - Replace `https://cm-jccho.github.io/moa-spin-siege/` with the deployed play link.
+> - Play link is already set to `https://cm-jccho.github.io/moa-spin-siege/`.
 > - Attach `browser/slot-defense-desktop.png` (or the mobile shot).
 > - Instagram is on hold until Nov 21 — this launch is for **Threads (@moa_daily80)** and **X (@jc_moa80)** only.
 

@@ -1,7 +1,7 @@
 # MOA 스핀 시즈 — 런칭 홍보 문구 (한국어)
 
 > **게시 전 확인**
-> - `https://cm-jccho.github.io/moa-spin-siege/` 자리에 배포된 플레이 링크를 넣어 주세요. (예: `https://.../slot-defense/`)
+> - 플레이 링크는 `https://cm-jccho.github.io/moa-spin-siege/` 로 확정되어 들어가 있습니다.
 > - 이미지: `browser/slot-defense-desktop.png` 또는 `browser/slot-defense-mobile.png` 첨부
 > - 인스타그램은 11/21 안정화 기간 이후로 보류 — 이번 런칭은 **스레드(@moa_daily80)·X(@jc_moa80)** 전용입니다.
 
