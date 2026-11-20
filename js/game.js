@@ -129,7 +129,7 @@ window.SB = window.SB || {};
     mods: {}, relics: [], draft: [], draftPool: [],
     quests: [], questIdx: 0, questDirty: true,
     stats: { spins: 0, promos: 0, waves: 0, kills: 0, jackpots: 0, heroTier: 0, bossKills: 0, goldEarned: 0, rerollMatch: 0, rangedKills: 0, flawlessWaves: 0, dmgTaken: 0, wallHits: 0, unitDeaths: 0 },
-    shake: 0, shakeT: 0, hitFlash: 0, edgeFlash: 0, hitStop: 0,
+    shake: 0, shakeT: 0, hitFlash: 0, edgeFlash: 0, boltFlash: 0, hitStop: 0,
     laneFlash: [0, 0, 0], coachStep: 0, spinsSinceCoach: 0, auto: false, vip: false, vipRelic: false,
     pending: [], pendingT: 0, lastSpin: null, nextUnitId: 1, nextEnemyId: 1,
     thunderT: 0, boss: null, bossMaxHp: 0, meteors: [], trialOn: false, revived: false,
@@ -385,7 +385,7 @@ window.SB = window.SB || {};
     G.stats = { spins: 0, promos: 0, waves: 0, kills: 0, jackpots: 0, heroTier: 0, bossKills: 0, goldEarned: 0, rerollMatch: 0, rangedKills: 0, flawlessWaves: 0, dmgTaken: 0, wallHits: 0, unitDeaths: 0 };
     G.spinning = false; G.pending = []; G.pendingT = 0; G.lastSpin = null;
     G.boss = null; G.thunderT = 0; G.auto = false; G.runT = 0; G.arenaMode = false;
-    G.hitStop = 0; G.edgeFlash = 0; G.hitFlash = 0; G.shake = 0; G.shakeT = 0;
+    G.hitStop = 0; G.edgeFlash = 0; G.hitFlash = 0; G.boltFlash = 0; G.shake = 0; G.shakeT = 0;
     G.laneFlash = [0, 0, 0];
     G.vipRelic = false; G.draftPend = 0; G.questDone = [];
     document.body.classList.remove('fever');
@@ -976,7 +976,7 @@ window.SB = window.SB || {};
   function castBolt(boost) {
     const b = boost || 1;
     const dmg = (70 + G.wave * 30) * b;
-    G.hitFlash = 0.5; G.edgeFlash = 1;
+    G.hitFlash = 0.5; G.edgeFlash = 1; G.boltFlash = 1;
     addShake(18, 0.55);
     G.hitStop = Math.max(G.hitStop, 0.07);
     S.thunder();
@@ -1956,6 +1956,7 @@ window.SB = window.SB || {};
     }
     if (G.shakeT > 0) { G.shakeT -= dt; if (G.shakeT <= 0) G.shake = 0; }
     if (G.hitFlash > 0) G.hitFlash -= dt;
+    if (G.boltFlash > 0) G.boltFlash = Math.max(0, G.boltFlash - dt * 2.2);
     if (G.edgeFlash > 0) G.edgeFlash = Math.max(0, G.edgeFlash - dt * 2.6);
     for (let i = 0; i < 3; i++) G.laneFlash[i] = Math.max(0, G.laneFlash[i] - dt * 2.4);
     G.dust.forEach(function (d) {
@@ -2072,6 +2073,13 @@ window.SB = window.SB || {};
       eg.addColorStop(1, 'rgba(255,22,50,' + (0.62 * a) + ')');
       ctx.fillStyle = eg;
       ctx.fillRect(0, 0, W, H);
+    }
+    if (G.boltFlash > 0) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = 'rgba(150,235,255,' + (0.26 * G.boltFlash) + ')';
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
     }
     // edge fade
     const vg = ctx.createLinearGradient(0, 0, 0, H * 0.1);
@@ -2542,12 +2550,23 @@ window.SB = window.SB || {};
       ctx.moveTo(m.x - 10, y); ctx.lineTo(m.x + 10, y);
       ctx.lineTo(m.x + 26, y - H * 0.42); ctx.lineTo(m.x - 26, y - H * 0.42);
       ctx.closePath(); ctx.fill();
-      const g = ctx.createRadialGradient(m.x, y, 2, m.x, y, 34);
-      g.addColorStop(0, 'rgba(255,255,235,1)');
-      g.addColorStop(0.45, 'rgba(255,170,60,0.95)');
+      const g = ctx.createRadialGradient(m.x, y, 2, m.x, y, 56);
+      g.addColorStop(0, 'rgba(255,255,240,1)');
+      g.addColorStop(0.35, 'rgba(255,190,80,0.98)');
       g.addColorStop(1, 'rgba(200,60,20,0)');
       ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(m.x, y, 34, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(m.x, y, 56, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      // ground marker so the strike lands where the player expects
+      const ty = laneY(m.lane) - laneH * 0.35;
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      ctx.strokeStyle = '#ffb347';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 8]);
+      ctx.beginPath();
+      ctx.ellipse(m.x, ty, m.r * 0.42, m.r * 0.16, 0, 0, Math.PI * 2);
+      ctx.stroke();
       ctx.restore();
     });
   }
@@ -2624,23 +2643,35 @@ window.SB = window.SB || {};
       g.addColorStop(0, A.hexA(b.col, 0));
       g.addColorStop(0.5, A.hexA(b.col, 0.55));
       g.addColorStop(1, A.hexA(b.col, 0));
-      ctx.strokeStyle = g;
-      ctx.lineWidth = b.bolt ? 3 : 5 * k + 1;
-      ctx.beginPath();
       if (b.bolt) {
-        let x = b.x0, y = b.y0;
-        ctx.moveTo(x, y);
-        const steps = 6;
+        // one jagged path, stroked three times (glow / body / core)
+        const pts = [[b.x0, b.y0]];
+        const steps = 8;
+        if (!b.jag) {
+          b.jag = [];
+          for (let i = 1; i < steps; i++) b.jag.push(rnd(-1, 1) * (b.w || 26));
+        }
         for (let i = 1; i <= steps; i++) {
           const t = i / steps;
-          x = lerp(b.x0, b.x1, t) + (i < steps ? rnd(-10, 10) : 0);
-          y = lerp(b.y0, b.y1, t);
-          ctx.lineTo(x, y);
+          const jx = i < steps ? b.jag[i - 1] : 0;
+          pts.push([lerp(b.x0, b.x1, t) + jx, lerp(b.y0, b.y1, t)]);
         }
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+        ctx.strokeStyle = A.hexA(b.col, 0.20);
+        ctx.lineWidth = 11 * k + 3; ctx.stroke();
+        ctx.strokeStyle = A.hexA(b.col, 0.8);
+        ctx.lineWidth = 3.4 * k + 1.2; ctx.stroke();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5 * k + 0.7; ctx.stroke();
       } else {
+        ctx.beginPath();
+        ctx.strokeStyle = g;
+        ctx.lineWidth = 5 * k + 1;
         ctx.moveTo(b.x0, b.y0); ctx.lineTo(b.x1, b.y1);
+        ctx.stroke();
       }
-      ctx.stroke();
       ctx.restore();
     });
   }
