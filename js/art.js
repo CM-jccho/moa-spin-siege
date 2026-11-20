@@ -446,6 +446,125 @@ window.SB = window.SB || {};
     ell(ctx, 64, 66, 30, 12, 0.7); ctx.stroke();
   }
 
+  /* ---------------- SLOT SPECIAL ITEMS ---------------- */
+  function stormBolt(ctx) {
+    aura(ctx, 3, '#9fe8ff');
+    // storm cloud
+    ctx.fillStyle = lg(ctx, 24, 22, 104, 64, '#7d8cb8', '#1b2238');
+    [[42, 40, 21, 13], [64, 32, 25, 16], [88, 40, 17, 12]].forEach(function (c) {
+      ell(ctx, c[0], c[1], c[2], c[3]); ctx.fill();
+    });
+    stroke(ctx, 2.4, '#0a0d16');
+    // bolt core
+    ctx.fillStyle = lg(ctx, 52, 46, 82, 118, '#ffffff', '#3ce6ff');
+    poly(ctx, [[73, 46], [48, 84], [63, 84], [50, 118], [83, 70], [67, 70], [85, 46]]);
+    ctx.fill(); stroke(ctx, 2.6, '#082033');
+    ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(70, 54); ctx.lineTo(62, 78); ctx.stroke();
+    // side sparks
+    ctx.strokeStyle = '#bff6ff'; ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(36, 66); ctx.lineTo(42, 78); ctx.lineTo(34, 84);
+    ctx.moveTo(98, 62); ctx.lineTo(92, 74); ctx.lineTo(100, 80);
+    ctx.stroke();
+  }
+
+  function meteorSprite(ctx) {
+    aura(ctx, 3, '#ff9a3c');
+    // flame trail
+    ctx.fillStyle = lg(ctx, 64, 6, 64, 74, 'rgba(255,220,120,.95)', 'rgba(255,90,40,0)');
+    poly(ctx, [[64, 8], [44, 62], [84, 62]]); ctx.fill();
+    // rock core
+    ctx.fillStyle = lg(ctx, 40, 52, 92, 108, '#8a5230', '#30140c');
+    ctx.beginPath();
+    ctx.moveTo(46, 76); ctx.lineTo(56, 56); ctx.lineTo(76, 50);
+    ctx.lineTo(92, 68); ctx.lineTo(86, 96); ctx.lineTo(64, 110); ctx.lineTo(48, 96);
+    ctx.closePath(); ctx.fill(); stroke(ctx, 2.6, '#160804');
+    // cracks glowing
+    ctx.strokeStyle = '#ffcf5c'; ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.moveTo(60, 60); ctx.lineTo(70, 78); ctx.lineTo(62, 92); ctx.moveTo(70, 78); ctx.lineTo(86, 74); ctx.stroke();
+    // flames licking the rock
+    ctx.fillStyle = 'rgba(255,140,40,.85)';
+    poly(ctx, [[48, 74], [38, 52], [52, 62], [58, 44], [64, 62], [74, 42], [78, 64], [92, 52], [86, 78]]);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,235,150,.9)';
+    poly(ctx, [[56, 72], [50, 58], [60, 66], [64, 52], [70, 66], [80, 58], [78, 74]]);
+    ctx.fill();
+  }
+
+  function paladinSprite(ctx, tier) {
+    const P = { a: '#ffd166', b: '#a97c14', c: '#fff7d6', m: '#ffe9a8' };
+    shadowBase(ctx, 50);
+    aura(ctx, Math.max(3, tier || 3), '#ffd166');
+    tierCrest(ctx, tier || 3, P.a, P.c);
+    // light wings
+    ctx.fillStyle = hexA('#fff3c4', 0.55);
+    for (let s = -1; s <= 1; s += 2) {
+      poly(ctx, [[64, 56], [64 + s * 34, 32], [64 + s * 26, 60], [64 + s * 34, 90], [64, 74]]);
+      ctx.fill();
+      stroke(ctx, 1.6, 'rgba(255,215,110,.55)');
+    }
+    legs(ctx, '#6b4f13', '#2a1e05');
+    // cape
+    ctx.fillStyle = lg(ctx, 62, 46, 48, 106, '#ffb43c', '#8a4a04');
+    poly(ctx, [[56, 52], [40, 106], [58, 100], [66, 54]]); ctx.fill(); stroke(ctx, 2.2);
+    // torso
+    ctx.fillStyle = lg(ctx, 52, 48, 84, 92, '#ffe9a8', '#c8901c');
+    poly(ctx, [[52, 52], [80, 52], [86, 76], [78, 94], [52, 94], [46, 76]]); ctx.fill(); stroke(ctx);
+    ctx.fillStyle = hexA('#ffffff', 0.45);
+    poly(ctx, [[58, 58], [74, 58], [72, 74], [57, 74]]); ctx.fill();
+    // cross emblem
+    ctx.fillStyle = '#fff8dd';
+    ctx.fillRect(63, 58, 5, 20); ctx.fillRect(57, 64, 17, 5);
+    // belt
+    ctx.fillStyle = P.b; rrect(ctx, 50, 88, 30, 7, 2); ctx.fill(); stroke(ctx, 2);
+    // head + crown
+    ctx.fillStyle = P.m;
+    rrect(ctx, 56, 30, 18, 19, 6); ctx.fill(); stroke(ctx, 2.6);
+    ctx.fillStyle = '#0a0d16'; rrect(ctx, 59, 37, 17, 6, 2); ctx.fill();
+    ctx.fillStyle = '#ffcf5c'; ctx.fillRect(62, 39, 4, 2); ctx.fillRect(69, 39, 4, 2);
+    ctx.fillStyle = P.a;
+    poly(ctx, [[54, 30], [56, 18], [61, 25], [65, 14], [69, 25], [74, 18], [76, 30]]); ctx.fill(); stroke(ctx, 1.8);
+    // halo
+    ctx.strokeStyle = 'rgba(255,236,160,.95)'; ctx.lineWidth = 2.6;
+    ell(ctx, 65, 22, 22, 7, 0); ctx.stroke();
+    // spear of light
+    ctx.save();
+    ctx.translate(90, 76); ctx.rotate(0.30);
+    ctx.fillStyle = lg(ctx, -3, 0, 3, 0, '#ffffff', '#ffd166');
+    ctx.fillRect(-2, -58, 4, 78);
+    ctx.fillStyle = '#fff8dd';
+    poly(ctx, [[0, -74], [10, -54], [0, -46], [-10, -54]]); ctx.fill(); stroke(ctx, 1.8, '#8a5c0a');
+    ctx.restore();
+    // shield
+    ctx.save();
+    ctx.translate(44, 78); ctx.rotate(-0.06);
+    ctx.fillStyle = lg(ctx, -14, -18, 14, 20, '#fff2c2', '#b07c12');
+    poly(ctx, [[-14, -18], [14, -18], [14, 4], [0, 20], [-14, 4]]); ctx.fill(); stroke(ctx, 2.6);
+    ctx.fillStyle = '#fff8dd';
+    ctx.fillRect(-2.5, -12, 5, 22); ctx.fillRect(-9, -5, 18, 5);
+    ctx.restore();
+  }
+
+  function frenzySprite(ctx) {
+    aura(ctx, 4, '#ff3ea5');
+    // three glowing reels
+    for (let i = 0; i < 3; i++) {
+      const x = 24 + i * 28;
+      ctx.fillStyle = lg(ctx, x, 34, x, 98, 'rgba(255,120,200,.35)', 'rgba(60,10,50,.8)');
+      rrect(ctx, x, 34, 22, 62, 6); ctx.fill();
+      stroke(ctx, 2.2, i === 1 ? '#ff7ecb' : '#8c2f6a');
+      // diamond
+      ctx.fillStyle = i === 1 ? '#fff0fa' : 'rgba(255,220,245,.6)';
+      poly(ctx, [[x + 11, 48], [x + 18, 62], [x + 11, 80], [x + 4, 62]]); ctx.fill();
+    }
+    // spark crown
+    ctx.fillStyle = '#ffd166';
+    poly(ctx, [[64, 8], [70, 24], [58, 24]]); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,180,240,.9)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(16, 104); ctx.lineTo(112, 104); ctx.stroke();
+  }
+
   /* ---------------- ENEMIES ---------------- */
   function goblin(ctx) {
     const P = { a: '#8ce05a', b: '#3d7a22', c: '#d8ffc0' };
@@ -809,6 +928,10 @@ window.SB = window.SB || {};
       else if (type === 'knight') knight(ctx, tier);
       else if (type === 'coin') coin(ctx, tier);
       else if (type === 'relic') relicSymbol(ctx, tier);
+      else if (type === 'bolt') stormBolt(ctx);
+      else if (type === 'meteor') meteorSprite(ctx);
+      else if (type === 'paladin') paladinSprite(ctx, tier);
+      else if (type === 'frenzy') frenzySprite(ctx);
       else spear(ctx, tier);
     });
     cache[key] = c; return c;

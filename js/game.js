@@ -28,10 +28,37 @@ window.SB = window.SB || {};
     artillery: { hp: 94, dmg: 40, aspd: 2.35, range: 3.05, weight: 8, rar: 'epic', col: '#ffa04d', proj: 'shell', aoe: 0.80 },
     knight: { hp: 175, dmg: 27, aspd: 1.65, range: 0.70, weight: 12, rar: 'rare', col: '#ffd98a' },
     coin: { weight: 19, rar: 'common', col: '#ffcf5c' },
-    relic: { weight: 5, rar: 'legendary', col: '#ff3ea5' }
+    relic: { weight: 5, rar: 'legendary', col: '#ff3ea5' },
+    // v1.3 slot special items — free ones are always in the pool, VIP ones
+    // appear during the trial window and lock again afterwards.
+    bolt: { weight: 4.6, rar: 'epic', col: '#9fe8ff', special: 'bolt' },
+    meteor: { weight: 3.8, rar: 'epic', col: '#ff9a3c', special: 'meteor' },
+    paladin: { hp: 560, dmg: 54, aspd: 1.28, range: 0.74, weight: 3.4, rar: 'legendary', col: '#ffd166', special: 'paladin', vip: 1 },
+    frenzy: { weight: 3.2, rar: 'legendary', col: '#ff3ea5', special: 'frenzy', vip: 1 }
   };
   const SYM_KEYS = Object.keys(UNIT);
   const TIER_HP = 2.05, TIER_DMG = 2.18, TIER_ASPD = 1.055;
+
+  /* v1.3 balance knobs — every difficulty/economy number in one place.
+     Tuned with the headless play simulation (SB.debug.sim, test/balance.py). */
+  const BAL = {
+    hpCurve: 1.20,       // enemy HP per wave (v1.2: 1.155)
+    dmgCurve: 1.16,      // enemy damage multiplier per wave (v1.2: linear +10%)
+    countBase: 5,        // wave spawn budget base
+    countPerWave: 3.5,   // spawn budget per wave (v1.2: 2.9)
+    bossBudget: 0.62,    // minion budget on a boss wave (v1.2: 0.55)
+    bossHp: 1.35,        // boss HP multiplier (v1.2: 1.00)
+    bossDmg: 1.22,       // boss wall damage multiplier (v1.2: 1.00)
+    bossSpd: 1.18,       // boss march speed multiplier (v1.2: 1.00)
+    bossDash: 3.2,       // speed multiplier while the boss breaks through the line
+    bossDashT: 1.0,      // seconds per breakthrough dash
+    bossDashCd: 7.0,     // seconds between dashes
+    reach: 1.00,         // enemy melee reach multiplier — how many can hit one unit at once
+    goldMul: 0.90,       // in-run gold income multiplier (v1.2: 1.00)
+    rerollBase: 10,
+    rerollWave: 3,       // extra reroll gold per wave (v1.2: 0)
+    rerollStep: 10       // extra reroll gold per consecutive reroll (v1.2: 5, capped 30)
+  };
 
   const ZONES = [
     { col: '#3ce6ff', sky: ['#0a1024', '#080c1b', '#05060e'], neb: ['rgba(40,90,190,0.20)', 'rgba(180,40,120,0.16)'], ridge: ['rgba(18,26,50,0.9)', 'rgba(12,18,38,0.95)'] },
@@ -45,7 +72,7 @@ window.SB = window.SB || {};
   const ENEMY = {
     goblin: { hp: 56, spd: 1.00, dmg: 8, atk: 1.15, gold: 4, size: 0.70, score: 12, from: 1 },
     orc: { hp: 158, spd: 0.76, dmg: 16, atk: 1.45, gold: 9, size: 0.84, score: 26, from: 2 },
-    skeleton: { hp: 82, spd: 0.64, dmg: 10, atk: 1.5, gold: 8, size: 0.78, score: 24, ranged: 1.65, from: 6 },
+    skeleton: { hp: 82, spd: 0.64, dmg: 10, atk: 1.5, gold: 8, size: 0.78, score: 24, ranged: 1.65, from: 3 },
     brute: { hp: 340, spd: 0.50, dmg: 25, atk: 1.9, gold: 16, size: 0.95, score: 55, armor: 0.22, from: 11 },
     wraith: { hp: 118, spd: 1.32, dmg: 13, atk: 1.25, gold: 11, size: 0.80, score: 32, from: 16 },
     boss: { hp: 1350, spd: 0.40, dmg: 44, atk: 1.75, gold: 140, size: 1.30, score: 400, armor: 0.12, boss: true }
@@ -71,40 +98,41 @@ window.SB = window.SB || {};
     { id: 'holy', glyph: 'sword', rar: 'legendary', w: 0, vip: true, mod: { atk: 0.35, hp: 0.35, holy: 1 } }
   ];
 
+  // v1.3 tactical missions: each one asks for a decision (hold, reroll, timing,
+  // unit build) rather than a passive counter, and pays in tactical assets.
   const QUESTS = [
-    { id: 'q1', stat: 'spins', target: 8, n: 8, reward: { gold: 60 } },
-    { id: 'q2', stat: 'promos', target: 3, n: 3, reward: { gold: 80 } },
-    { id: 'q3', stat: 'waves', target: 2, n: 2, reward: { charge: 1 } },
-    { id: 'q4', stat: 'kills', target: 25, n: 25, reward: { gold: 100 } },
-    { id: 'q5', stat: 'jackpots', target: 1, n: 1, reward: { gold: 90 } },
-    { id: 'q6', stat: 'heroTier', target: 1, n: 1, reward: { gold: 120 } },
-    { id: 'q7', stat: 'bossKills', target: 1, n: 1, reward: { heal: 20 } },
-    { id: 'q8', stat: 'goldEarned', target: 400, n: 400, reward: { charge: 2 } },
-    { id: 'q9', stat: 'rerollMatch', target: 1, n: 1, reward: { gold: 70 } },
-    { id: 'q10', stat: 'rangedKills', target: 3, n: 3, reward: { gold: 80 } },
-    { id: 'q11', stat: 'flawlessWaves', target: 1, n: 1, reward: { heal: 15 } }
+    { id: 'm1', stat: 'rerollMatch', target: 1, n: 1, scope: 'run', reward: { ord: 'bolt' } },
+    { id: 'm2', stat: 'flawlessWaves', target: 1, n: 1, scope: 'wave', minWave: 3, reward: { heal: 14, gold: 50 } },
+    { id: 'm3', stat: 'heldTriple', target: 1, n: 1, scope: 'run', reward: { ord: 'meteor' } },
+    { id: 'm4', stat: 'thrifty', target: 1, n: 1, scope: 'wave', minWave: 3, reward: { rerollFree: 2, gold: 50 } },
+    { id: 'm5', stat: 'heroTier', target: 1, n: 1, scope: 'wave', minWave: 2, reward: { gold: 70 } },
+    { id: 'm6', stat: 'bossFast', target: 1, n: 1, scope: 'run', minWave: 5, reward: { ord: 'bolt', heal: 10 } },
+    { id: 'm7', stat: 'specialKills', target: 8, n: 8, scope: 'run', reward: { ord: 'meteor' } },
+    { id: 'm8', stat: 'holdClear', target: 1, n: 1, scope: 'wave', minWave: 2, reward: { charge: 1 } }
   ];
 
-    const MELEE = { spear: 1, knight: 1 };
+    const MELEE = { spear: 1, knight: 1, paladin: 1 };
 
   /* ================= STATE ================= */
   const G = {
     state: 'menu', t: 0, runT: 0,
     hp: 100, maxHp: 100, gold: 0, score: 0, best: 0, bestWave: 1,
     wave: 0, waveState: 'idle', waveTimer: 0, spawnQueue: [], spawnT: 0,
-    units: [], enemies: [], projs: [], parts: [], texts: [], beams: [],
+    units: [], enemies: [], projs: [], parts: [], texts: [], beams: [], meteors: [],
     reels: [{}, {}, {}], held: [false, false, false],
     spinning: false, spinT: 0, spinDur: 0.72, spinKind: 'none', spinIndex: 0,
     charges: 3, maxCharges: 4, chargeT: 0,
-    rerollCost: 10, lastRerollSpin: false, waveDamaged: false, zoneShown: -1,
-    fever: 0, feverT: 0, feverOn: false,
+    rerollCost: 10, rerollStreak: 0, lastRerollSpin: false, waveDamaged: false, zoneShown: -1,
+    ord: { bolt: 0, meteor: 0 }, freeRerolls: 0, lastHeld: 0,
+    waveStats: { rerollMatch: 0, flawlessWaves: 0, thrifty: 0, heroTier: 0, holdClear: 0, rangedKills: 0, specialKills: 0, rerolls: 0, promos: 0 },
+    fever: 0, feverT: 0, feverOn: false, frenzyT: 0,
     mods: {}, relics: [], draft: [], draftPool: [],
     quests: [], questIdx: 0, questDirty: true,
-    stats: { spins: 0, promos: 0, waves: 0, kills: 0, jackpots: 0, heroTier: 0, bossKills: 0, goldEarned: 0, rerollMatch: 0, rangedKills: 0, flawlessWaves: 0 },
+    stats: { spins: 0, promos: 0, waves: 0, kills: 0, jackpots: 0, heroTier: 0, bossKills: 0, goldEarned: 0, rerollMatch: 0, rangedKills: 0, flawlessWaves: 0, dmgTaken: 0, wallHits: 0, unitDeaths: 0 },
     shake: 0, shakeT: 0, hitFlash: 0, edgeFlash: 0, hitStop: 0,
     laneFlash: [0, 0, 0], coachStep: 0, spinsSinceCoach: 0, auto: false, vip: false, vipRelic: false,
     pending: [], pendingT: 0, lastSpin: null, nextUnitId: 1, nextEnemyId: 1,
-    thunderT: 0, boss: null, bossMaxHp: 0,
+    thunderT: 0, boss: null, bossMaxHp: 0, meteors: [], trialOn: false, revived: false,
     scaleW: 1280, scaleH: 600, laneH: 200, castleX: 110, dpr: 1,
     stars: [], dust: [], hintShown: false, killsSinceToast: 0
   };
@@ -163,7 +191,7 @@ window.SB = window.SB || {};
   function show(id) { $(id).classList.add('show'); }
   function hide(id) { $(id).classList.remove('show'); }
   function anyOverlay() {
-    return ['menuOverlay', 'draftOverlay', 'pauseOverlay', 'gameoverOverlay', 'howtoOverlay', 'vipOverlay']
+    return ['menuOverlay', 'draftOverlay', 'pauseOverlay', 'gameoverOverlay', 'howtoOverlay', 'vipOverlay', 'deckOverlay']
       .some(function (k) { return $(k).classList.contains('show'); });
   }
 
@@ -227,8 +255,15 @@ window.SB = window.SB || {};
       const pip = $('pip' + i);
       if (pip) pip.classList.toggle('on', i < Math.floor(G.charges) || (i === Math.floor(G.charges) && G.chargeT > 0.5));
     }
-    const poor = G.gold < G.rerollCost;
-    if ($('rerollCost')) $('rerollCost').textContent = G.rerollCost + 'G';
+    if ($('trialChip')) $('trialChip').hidden = !(G.trialOn && !G.vip);
+    const poor = G.gold < G.rerollCost && !(G.freeRerolls > 0);
+    if ($('rerollCost')) $('rerollCost').textContent = G.freeRerolls > 0 ? I.t('slot.free') : G.rerollCost + 'G';
+    if ($('ordBolt')) {
+      $('ordBolt').textContent = G.ord.bolt;
+      $('ordMeteor').textContent = G.ord.meteor;
+      $('btnBolt').disabled = !(G.ord.bolt > 0);
+      $('btnMeteor').disabled = !(G.ord.meteor > 0);
+    }
     $('rerollBtn').disabled = G.spinning || poor;
     $('rerollBtn').classList.toggle('poor', poor);
     $('autoBtn').classList.toggle('on', G.auto);
@@ -238,18 +273,32 @@ window.SB = window.SB || {};
     }
   }
 
+  function bump(stat, n) {
+    G.stats[stat] = (G.stats[stat] || 0) + (n || 1);
+    if (G.waveStats) G.waveStats[stat] = (G.waveStats[stat] || 0) + (n || 1);
+    G.questDirty = true;
+  }
+  function questValue(q) {
+    const src = q.scope === 'wave' ? G.waveStats : G.stats;
+    const raw = ((src && src[q.stat]) || 0) - (q.base || 0);
+    return Math.max(0, Math.min(raw, q.target));
+  }
+
   function rewardText(q) {
-    if (q.reward.gold) return q.reward.gold + 'G';
-    if (q.reward.heal) return I.t('quest.reward.heal', { n: q.reward.heal });
-    if (q.reward.charge) return I.t('quest.reward.charge', { n: q.reward.charge });
-    return '';
+    const r = q.reward, out = [];
+    if (r.gold) out.push(r.gold + 'G');
+    if (r.heal) out.push(I.t('quest.reward.heal', { n: r.heal }));
+    if (r.charge) out.push(I.t('quest.reward.charge', { n: r.charge }));
+    if (r.rerollFree) out.push(I.t('quest.reward.rerollFree', { n: r.rerollFree }));
+    if (r.ord) out.push(I.t('quest.reward.' + r.ord));
+    return out.join(' · ');
   }
 
   function renderQuests() {
     const ul = $('questList');
     let html = '';
     G.quests.forEach(function (q) {
-      const cur = Math.min(G.stats[q.stat] || 0, q.target);
+      const cur = questValue(q);
       const pct = cur / q.target * 100;
       html += '<li class="q-item' + (cur >= q.target ? ' done' : '') + '" data-q="' + q.id + '">' +
         '<div class="q-top"><span>' + I.t('quest.' + q.id, { n: q.n }) + '</span><span class="q-p">' + cur + '/' + q.target + '</span></div>' +
@@ -267,7 +316,7 @@ window.SB = window.SB || {};
     const zi = zoneIndex();
     let html = '<div class="mb-zone" style="--zc:' + ZONES[zi].col + '"><i></i><span>' + I.t('zone.' + (zi + 1)) + '</span></div>';
     G.quests.forEach(function (q) {
-      const cur = Math.min(G.stats[q.stat] || 0, q.target);
+      const cur = questValue(q);
       html += '<div class="mb-item' + (cur >= q.target ? ' done' : '') + '" data-q="' + q.id + '">' +
         '<span class="t">' + I.t('quest.' + q.id, { n: q.n }) + '</span>' +
         '<span class="p">' + cur + '/' + q.target + '</span>' +
@@ -326,10 +375,14 @@ window.SB = window.SB || {};
     G.units = []; G.enemies = []; G.projs = []; G.parts = []; G.texts = []; G.beams = [];
     G.held = [false, false, false];
     G.charges = 3; G.chargeT = 0;
-    G.rerollCost = 10; G.lastRerollSpin = false; G.waveDamaged = false; G.zoneShown = -1;
-    G.fever = 0; G.feverT = 0; G.feverOn = false;
+    G.rerollCost = 10; G.rerollStreak = 0; G.lastRerollSpin = false; G.waveDamaged = false; G.zoneShown = -1;
+    G.ord = { bolt: 0, meteor: 0 }; G.freeRerolls = 0; G.lastHeld = 0;
+    G.waveStats = { rerollMatch: 0, flawlessWaves: 0, thrifty: 0, heroTier: 0, holdClear: 0, rangedKills: 0, specialKills: 0, rerolls: 0, promos: 0 };
+    G.fever = 0; G.feverT = 0; G.feverOn = false; G.frenzyT = 0;
+    G.meteors = []; G.revived = false; G.trialOn = trialAvailable();
+    document.body.classList.remove('frenzy');
     G.relics = []; G.draft = []; G.quests = [];
-    G.stats = { spins: 0, promos: 0, waves: 0, kills: 0, jackpots: 0, heroTier: 0, bossKills: 0, goldEarned: 0, rerollMatch: 0, rangedKills: 0, flawlessWaves: 0 };
+    G.stats = { spins: 0, promos: 0, waves: 0, kills: 0, jackpots: 0, heroTier: 0, bossKills: 0, goldEarned: 0, rerollMatch: 0, rangedKills: 0, flawlessWaves: 0, dmgTaken: 0, wallHits: 0, unitDeaths: 0 };
     G.spinning = false; G.pending = []; G.pendingT = 0; G.lastSpin = null;
     G.boss = null; G.thunderT = 0; G.auto = false; G.runT = 0; G.arenaMode = false;
     G.hitStop = 0; G.edgeFlash = 0; G.hitFlash = 0; G.shake = 0; G.shakeT = 0;
@@ -408,6 +461,67 @@ window.SB = window.SB || {};
     document.body.classList.remove('fever');
   }
 
+  /* ---- deck (slot collection) ---- */
+  const DECK_ITEMS = ['bolt', 'meteor', 'paladin', 'frenzy'];
+  function deckStatus(sym) {
+    const d = UNIT[sym];
+    if (!d.vip) return 'free';
+    if (G.vip) return 'owned';
+    if (trialAvailable()) return 'trial';
+    return 'locked';
+  }
+  function renderDeck() {
+    const wrap = $('deckList');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    DECK_ITEMS.forEach(function (sym) {
+      const d = UNIT[sym];
+      const st = deckStatus(sym);
+      const card = document.createElement('div');
+      card.className = 'deck-card';
+      card.setAttribute('data-status', st);
+      card.innerHTML =
+        '<div class="dc-art"><img src="' + A.icon(sym, 1) + '" alt=""></div>' +
+        '<div class="dc-body">' +
+          '<div class="dc-top"><h3>' + I.t('unit.' + sym) + '</h3><span class="dc-rar" data-rar="' + d.rar + '">' + I.t('rarity.' + d.rar) + '</span></div>' +
+          '<p>' + I.t('unit.' + sym + '.d') + '</p>' +
+          '<span class="dc-state">' + I.t('deck.' + st) + '</span>' +
+        '</div>';
+      if (st === 'locked') {
+        const btn = document.createElement('button');
+        btn.className = 'ghost-btn small dc-unlock';
+        btn.textContent = I.t('deck.unlock');
+        btn.addEventListener('click', function () { S.click(); openVip(); });
+        card.appendChild(btn);
+      }
+      wrap.appendChild(card);
+    });
+    const note = $('deckNote');
+    if (note) note.textContent = I.t(G.vip ? 'deck.vipNote' : trialAvailable() ? 'deck.trialNote' : 'deck.lockedNote');
+  }
+  function openDeck() { renderDeck(); show('deckOverlay'); S.click(); }
+
+  /* ---- defeat lifeline: lightning drop / premium retry ---- */
+  function reviveRun(premium) {
+    if (G.state !== 'gameover') return;
+    if (premium && !G.vip) { openVip(); return; }
+    if (!premium && G.revived) { toast(I.t('revive.used')); return; }
+    if (!premium) G.revived = true;
+    G.state = 'playing';
+    hide('gameoverOverlay');
+    document.getElementById('app').setAttribute('data-state', 'playing');
+    G.hp = Math.max(6, Math.round(G.maxHp * (premium ? 0.62 : 0.45)));
+    G.enemies = []; G.projs = []; G.spawnQueue = []; G.meteors = [];
+    G.draftPend = 0; G.waveDamaged = false; G.boss = null;
+    $('bossHud').hidden = true;
+    document.body.classList.remove('fever');
+    startWave(Math.max(1, G.wave));
+    hud();
+    S.victory();
+    toast(I.t('revive.ok'), 'gold');
+    setTimeout(function () { if (G.state === 'playing') castBolt(premium ? 1.7 : 1.25); }, 850);
+  }
+
   function gameOver() {
     if (G.state === 'gameover') return;
     G.state = 'gameover';
@@ -425,6 +539,13 @@ window.SB = window.SB || {};
       '<div><span>' + I.t('stat.gold') + '</span><b>' + Math.floor(G.gold) + '</b></div>' +
       '<div><span>' + I.t('gameover.best') + '</span><b>' + G.best + '</b></div>';
     $('bossHud').hidden = true;
+    if ($('toastLayer')) $('toastLayer').innerHTML = '';
+    const rb = $('btnRevive');
+    if (rb) rb.hidden = !!G.revived;
+    const rn = $('reviveNote');
+    if (rn) rn.textContent = I.t(G.revived ? 'revive.used' : 'revive.note');
+    const vb = $('btnReviveVip');
+    if (vb) vb.textContent = I.t(G.vip ? 'revive.vip' : 'revive.vipLocked');
     show('gameoverOverlay');
     if (G.score >= prevBest && G.score > 0) toast(I.t('toast.newBest'), 'gold');
   }
@@ -454,7 +575,10 @@ window.SB = window.SB || {};
     G.arenaMode = false;
     G.stats.waves = n - 1;
     G.waveState = 'active';
-    G.rerollCost = 10;
+    G.waveStats = { rerollMatch: 0, flawlessWaves: 0, thrifty: 0, heroTier: 0, holdClear: 0, rangedKills: 0, specialKills: 0, rerolls: 0, promos: 0 };
+    G.questDirty = true;
+    G.rerollStreak = 0;
+    refreshRerollCost();
     G.waveDamaged = false;
     G.spawnQueue = buildWave(n);
     G.spawnT = 0;
@@ -471,6 +595,10 @@ window.SB = window.SB || {};
     } else {
       banner(isBoss ? I.t('wave.boss') : I.t('hud.wave'), I.t('wave.incoming', { n: n }), isBoss ? 'BOSS' : '', isBoss);
     }
+    if (n === 1 && G.trialOn) setTimeout(function () {
+      if (G.state === 'playing') banner(I.t('trial.kicker'), I.t('trial.title'), I.t('trial.sub'), false);
+    }, 1900);
+    if (n > 2 && G.trialOn) G.trialOn = false;
     if (n === 1) setTimeout(function () {
       if (G.state === 'playing' && !G.hintShown) {
         G.hintShown = true;
@@ -482,17 +610,17 @@ window.SB = window.SB || {};
   function buildWave(n) {
     const isBoss = n % 5 === 0;
     const q = [];
-    const hpMul = Math.pow(1.155, n - 1);
-    const dmgMul = 1 + (n - 1) * 0.10;
+    const hpMul = Math.pow(BAL.hpCurve, n - 1);
+    const dmgMul = Math.pow(BAL.dmgCurve, n - 1);
     const types = Object.keys(ENEMY).filter(function (t) { return !ENEMY[t].boss && ENEMY[t].from <= n; });
-    let budget = 5 + n * 2.9;
+    let budget = BAL.countBase + n * BAL.countPerWave;
     let t = 0.4;
     const lanes = [0, 1, 2];
     if (isBoss) {
       bossCounter++;
       const bossName = BOSS_NAMES[(bossCounter - 1) % BOSS_NAMES.length] + ' ' + ['I', 'II', 'III', 'IV', 'V'][Math.min(4, Math.floor((n - 5) / 25))];
-      q.push({ type: 'boss', lane: 1, t: 1.0, hpMul: hpMul * 1.0, dmgMul: dmgMul, name: bossName });
-      budget *= 0.55;
+      q.push({ type: 'boss', lane: 1, t: 1.0, hpMul: hpMul * BAL.bossHp, dmgMul: dmgMul * BAL.bossDmg, spdMul: BAL.bossSpd, name: bossName });
+      budget *= BAL.bossBudget;
     }
     let guard = 0;
     while (budget > 0 && guard < 60) {
@@ -507,6 +635,14 @@ window.SB = window.SB || {};
     return q;
   }
 
+  function rerollBaseCost(w) {
+    return BAL.rerollBase + Math.floor((Math.max(1, w) - 1) * BAL.rerollWave);
+  }
+  function refreshRerollCost() {
+    G.rerollCost = rerollBaseCost(G.wave) + BAL.rerollStep * (G.rerollStreak || 0);
+    return G.rerollCost;
+  }
+
   function spawnEnemy(spec) {
     const def = ENEMY[spec.type];
     const hp = def.hp * spec.hpMul * (1 + G.wave * 0.03);
@@ -514,7 +650,7 @@ window.SB = window.SB || {};
       id: G.nextEnemyId++, type: spec.type, lane: spec.lane,
       x: spec.at || (1.03 + rnd(0, 0.05)), hp: hp, maxHp: hp,
       dmg: def.dmg * spec.dmgMul, atk: def.atk, cd: rnd(0.2, 0.8),
-      spd: def.spd * W * 0.070, size: def.size, gold: def.gold, score: def.score,
+      spd: def.spd * (spec.spdMul || 1) * W * 0.070, size: def.size, gold: def.gold, score: def.score,
       ranged: def.ranged || 0, armor: def.armor || 0, boss: !!def.boss,
       hurt: 0, flash: 0, squash: 0, kb: 0, atkAnim: 0, bob: Math.random() * 6.28, born: G.t,
       name: spec.name || null, roarT: 3
@@ -532,13 +668,34 @@ window.SB = window.SB || {};
   function laneY(lane) { return laneH * (lane + 0.9); }
 
   /* ================= SPIN ================= */
+  /* ---- slot special items: trial gating ---- */
+  function trialStored() {
+    try { return localStorage.getItem('moa.ss.trial') === '1'; } catch (e) { return false; }
+  }
+  function trialAvailable() { return !G.vip && !trialStored(); }
+  function premiumOn() { return G.vip || G.trialOn; }
+  function consumeTrial() {
+    if (G.vip || !G.trialOn) return false;
+    G.trialOn = false;
+    try { localStorage.setItem('moa.ss.trial', '1'); } catch (e) {}
+    lanternTrialEnd();
+    return true;
+  }
+  function lanternTrialEnd() {
+    toast(I.t('trial.over'), 'gold');
+    setTimeout(function () {
+      if (G.state === 'playing' || G.state === 'draft') toast(I.t('trial.cta'), 'mob');
+    }, 2600);
+  }
+
   function weightedSym() {
+    const keys = SYM_KEYS.filter(function (k) { return !UNIT[k].vip || premiumOn(); });
     let total = 0;
-    SYM_KEYS.forEach(function (k) { total += UNIT[k].weight; });
+    keys.forEach(function (k) { total += UNIT[k].weight; });
     let r = Math.random() * total;
-    for (let i = 0; i < SYM_KEYS.length; i++) {
-      r -= UNIT[SYM_KEYS[i]].weight;
-      if (r <= 0) return SYM_KEYS[i];
+    for (let i = 0; i < keys.length; i++) {
+      r -= UNIT[keys[i]].weight;
+      if (r <= 0) return keys[i];
     }
     return 'spear';
   }
@@ -552,8 +709,9 @@ window.SB = window.SB || {};
     if (!open.length) return { syms: syms, kind: 'none' };
 
     const feverBoost = G.feverOn ? 1 : 0;
-    const pTriple = clamp(G.mods.triple + feverBoost * 0.20, 0, 0.85);
-    const pPair = clamp(G.mods.pair + feverBoost * 0.30, 0, 0.95);
+    const frenzyBoost = G.frenzyT > 0 ? 1 : 0;
+    const pTriple = clamp(G.mods.triple + feverBoost * 0.20 + frenzyBoost * 0.22, 0, 0.88);
+    const pPair = clamp(G.mods.pair + feverBoost * 0.30 + frenzyBoost * 0.30, 0, 0.96);
     const r = Math.random();
     let kind = 'none';
 
@@ -594,10 +752,10 @@ window.SB = window.SB || {};
     }
     const res = pickSpin();
     G.lastSpin = res;
+    G.lastHeld = G.held.filter(Boolean).length;
     G.spinning = true;
     G.spinT = 0;
-    G.stats.spins++;
-    G.questDirty = true;
+    bump('spins');
     G.spinsSinceCoach++;
     if (G.coachStep === 1) coachAdvance(2);
     else if (G.coachStep && G.spinsSinceCoach > 7) endCoach();
@@ -762,12 +920,12 @@ window.SB = window.SB || {};
     });
 
     if (tripleSym || pairSym) {
-      if (G.lastRerollSpin) { G.stats.rerollMatch++; G.questDirty = true; }
+      if (G.lastRerollSpin) bump('rerollMatch');
     }
     G.lastRerollSpin = false;
     if (tripleSym) {
-      G.stats.jackpots++;
-      G.questDirty = true;
+      bump('jackpots');
+      if (G.lastHeld >= 2) bump('heldTriple');
       S.jackpot(); S.combo(3);
       G.shake = 14; G.shakeT = 0.5;
       G.hitStop = Math.max(G.hitStop, 0.08);
@@ -787,9 +945,8 @@ window.SB = window.SB || {};
       addFever(10);
       addShake(4, 0.2);
       comboBanner(2);
-      G.gold += Math.round(14 * G.mods.gold);
-      G.stats.goldEarned += Math.round(14 * G.mods.gold);
-      floatText(W * 0.5, H * 0.36, '+' + Math.round(14 * G.mods.gold) + 'G', '#ffd76a', 18);
+      const g = gainGold(14);
+      floatText(W * 0.5, H * 0.36, '+' + g + 'G', '#ffd76a', 18);
       G.score += 40;
     }
     addFever(9);
@@ -806,12 +963,139 @@ window.SB = window.SB || {};
     hud();
   }
 
+  /* ================= SLOT SPECIAL ITEMS ================= */
+  function summonSpecial(sym, lane, reelIdx, tierBonus) {
+    const boost = tierBonus ? 1.8 : 1;
+    if (sym === 'bolt') castBolt(boost);
+    else if (sym === 'meteor') castMeteor(boost);
+    else if (sym === 'frenzy') startFrenzy();
+    else if (sym === 'paladin') castPaladin(lane, reelIdx);
+    if (UNIT[sym].vip) consumeTrial();
+  }
+
+  function castBolt(boost) {
+    const b = boost || 1;
+    const dmg = (70 + G.wave * 30) * b;
+    G.hitFlash = 0.5; G.edgeFlash = 1;
+    addShake(18, 0.55);
+    G.hitStop = Math.max(G.hitStop, 0.07);
+    S.thunder();
+    const alive = G.enemies.filter(function (e) { return !e.dead; });
+    alive.slice(0, 16).forEach(function (e) {
+      const x = e.x * W, y = laneY(e.lane) - laneH * 0.42;
+      G.beams.push({ x0: x + rnd(-16, 16), y0: 0, x1: x, y1: y, life: 0.34, max: 0.34, col: '#bff6ff', bolt: true });
+      G.beams.push({ x0: x + rnd(-24, 24), y0: 0, x1: x, y1: y, life: 0.52, max: 0.52, col: '#6fd8ff', bolt: true });
+      sparkBurst(x, y, 8, '#d8f7ff');
+      ring(x, y, '#9fe8ff', 1.1);
+    });
+    for (let i = 0; i < 3; i++) {
+      const x = W * (0.36 + i * 0.21);
+      G.beams.push({ x0: x, y0: 0, x1: x + rnd(-18, 18), y1: laneY(i), life: 0.62, max: 0.62, col: '#eafcff', bolt: true });
+    }
+    let n = 0;
+    alive.forEach(function (e) {
+      if (e.dead) return;
+      hitEnemy(e, dmg + e.maxHp * 0.30 * b, false, null);
+      if (e.dead) bump('specialKills');
+      else e.stun = Math.max(e.stun || 0, 1.1);
+      n++;
+    });
+    G.score += 40 * n;
+    floatText(W * 0.5, H * 0.30, I.t('fx.bolt'), '#eafcff', 32);
+    if (n) toast(I.t('toast.bolt', { n: n }), 'mag');
+    hud();
+  }
+
+  function castMeteor(boost) {
+    const b = boost || 1;
+    const cnt = [0, 0, 0];
+    G.enemies.forEach(function (e) { if (!e.dead && cnt[e.lane] !== undefined) cnt[e.lane]++; });
+    let lane = 0;
+    for (let i = 1; i < 3; i++) if (cnt[i] > cnt[lane]) lane = i;
+    const dmg = (150 + G.wave * 45) * b;
+    G.meteors.push({ x: W * rnd(0.55, 0.72), y: -H * 0.25, lane: lane, dmg: dmg, r: laneH * 2.7, vy: H * 1.15 });
+    G.hitFlash = 0.35;
+    S.meteorFall();
+    floatText(W * 0.5, H * 0.26, I.t('fx.meteor'), '#ffc271', 30);
+    toast(I.t('toast.meteor'), 'mag');
+  }
+
+  function meteorImpact(m) {
+    const y = laneY(m.lane) - laneH * 0.35;
+    let n = 0;
+    G.enemies.forEach(function (e) {
+      if (e.dead) return;
+      const dx = e.x * W - m.x;
+      const dy = laneY(e.lane) - y;
+      if (Math.sqrt(dx * dx + dy * dy * 0.4) > m.r && Math.abs(dx) > m.r) return;
+      hitEnemy(e, m.dmg + e.maxHp * 0.18, true, null);
+      if (e.dead) bump('specialKills');
+      else { e.kb = 0.055; e.stun = Math.max(e.stun || 0, 0.7); }
+      n++;
+    });
+    ring(m.x, y, '#ffb347', 4.2);
+    ring(m.x, y, '#fff1c2', 2.4);
+    sparkBurst(m.x, y, 34, '#ffc271');
+    shards(m.x, y, 18, ['#ffb347', '#ffe0a8', '#c9b79a']);
+    addShake(20, 0.6);
+    G.hitStop = Math.max(G.hitStop, 0.08);
+    S.meteorHit();
+    G.score += 30 * n;
+  }
+
+  function castPaladin(lane, reelIdx) {
+    const ln = lane === undefined ? (Math.random() * 3) | 0 : lane;
+    const occupied = G.units.filter(function (u) { return !u.dying && u.lane === ln; });
+    let slot = -1;
+    for (let s = 0; s < G.slots.length; s++) {
+      if (!occupied.some(function (u) { return u.slot === s; })) { slot = s; break; }
+    }
+    if (slot < 0) {
+      let low = null;
+      occupied.forEach(function (u) { if (!low || u.hp < low.hp) low = u; });
+      if (low) { low.dying = true; slot = low.slot; }
+    }
+    if (slot < 0) slot = 0;
+    const u = makeUnit('paladin', 3, ln, slot);
+    u.pending = 0.6;
+    u.arriveT = 0.6;
+    G.units.push(u);
+    G.pending.push(u);
+    const x = u.x * W;
+    G.beams.push({ x0: x, y0: H, x1: x, y1: laneY(ln) - laneH * 0.25, life: 0.62, max: 0.62, col: '#ffd166', pillar: true });
+    ring(x, laneY(ln) - laneH * 0.35, '#ffd166', 2.6);
+    sparkBurst(x, laneY(ln) - laneH * 0.35, 26, '#ffe9a8');
+    addShake(8, 0.3);
+    S.promote(); S.victory();
+    toast(I.t('toast.paladin'), 'gold');
+    G.laneFlash[ln] = 0.9;
+  }
+
+  function castOrdnance(kind) {
+    if (G.state !== 'playing' || G.spinning) return false;
+    if (!(G.ord[kind] > 0)) { toast(I.t('ord.empty')); return false; }
+    if (kind === 'meteor' && !G.enemies.length) { toast(I.t('ord.empty')); return false; }
+    G.ord[kind] -= 1;
+    if (kind === 'bolt') castBolt(1); else castMeteor(1);
+    hud();
+    return true;
+  }
+
+  function startFrenzy() {
+    G.frenzyT = 9;
+    document.body.classList.add('frenzy');
+    S.fever();
+    banner(I.t('item.frenzy'), I.t('fx.frenzy'), I.t('fx.frenzySub'), false);
+    toast(I.t('toast.frenzy'), 'gold');
+    for (let i = 0; i < 26; i++) sparkBurst(rnd(W * 0.2, W * 0.8), rnd(H * 0.2, H * 0.7), 4, i % 2 ? '#ff7ecb' : '#ffd166');
+  }
+
   function summonSymbol(sym, lane, tierBonus, reelIdx, bonus) {
     const def = UNIT[sym];
     if (!def) return;
+    if (def.special) { summonSpecial(sym, lane, reelIdx, tierBonus); return; }
     if (sym === 'coin') {
-      const g = Math.round((tierBonus ? 55 : 14) * G.mods.gold);
-      gainGold(g);
+      const g = gainGold(tierBonus ? 55 : 14);
       floatText(W * (0.5 + (Math.random() - 0.5) * 0.2), H * 0.3, '+' + g + 'G', '#ffd76a', 20, g);
       S.coin();
       sparkBurst(reelX(reelIdx), H - 6, 10, '#ffcf5c');
@@ -839,7 +1123,7 @@ window.SB = window.SB || {};
         promote(low, 1);
         return;
       }
-      gainGold(Math.round(12 * G.mods.gold));
+      gainGold(12);
       if (G.killsSinceToast++ % 6 === 0) toast(I.t('slot.laneFull'));
       return;
     }
@@ -911,9 +1195,8 @@ window.SB = window.SB || {};
       u.maxHp *= TIER_HP; u.dmg *= TIER_DMG; u.aspd *= TIER_ASPD;
     }
     u.hp = u.maxHp;
-    G.stats.promos++;
-    if (u.tier >= 3) G.stats.heroTier = 1;
-    G.questDirty = true;
+    bump('promos');
+    if (u.tier >= 3) bump('heroTier');
     G.score += 60 * u.tier;
     S.promote(); S.merge(u.tier);
     const x = u.x * W, y = laneY(u.lane) - laneH * 0.35;
@@ -1093,12 +1376,13 @@ window.SB = window.SB || {};
 
   /* ================= COMBAT ================= */
   function gainGold(n) {
-    if (n <= 0) return;
-    const v = Math.round(n * (G.mods.gold || 1));
+    if (n <= 0) return 0;
+    const v = Math.round(n * (G.mods.gold || 1) * BAL.goldMul);
     G.gold += v;
     G.stats.goldEarned += v;
     G.score += 2;
     hud();
+    return v;
   }
 
   function addFever(n) {
@@ -1156,20 +1440,18 @@ window.SB = window.SB || {};
   function killEnemy(e) {
     if (e.dead) return;
     e.dead = true;
-    G.stats.kills++;
-    if (ENEMY[e.type].ranged) { G.stats.rangedKills++; }
-    G.questDirty = true;
+    bump('kills');
+    if (ENEMY[e.type].ranged) bump('rangedKills');
     G.score += e.score;
-    const gold = Math.round((e.gold + (G.mods.bounty || 0)) * (G.mods.gold || 1));
-    gainGold(e.gold + (G.mods.bounty || 0));
+    const gold = gainGold(e.gold + (G.mods.bounty || 0));
     const x = e.x * W, y = laneY(e.lane) - laneH * 0.4;
     sparkBurst(x, y, e.boss ? 52 : 10, e.boss ? '#ff6b8a' : '#ff9a6b');
     shards(x, y, e.boss ? 16 : 5, e.boss ? '#ff8a9c' : '#ffc79a');
     floatText(x + rnd(-6, 6), y - laneH * 0.08, '+' + gold + 'G', '#ffd76a', e.boss ? 26 : 17);
     if (!e.boss) G.hitStop = Math.max(G.hitStop, 0.018);
     if (e.boss) {
-      G.stats.bossKills++;
-      G.questDirty = true;
+      bump('bossKills');
+      if (G.t - (e.born || 0) <= 20) bump('bossFast');
       G.boss = null;
       $('bossHud').hidden = true;
       G.shake = 20; G.shakeT = 0.7;
@@ -1195,6 +1477,7 @@ window.SB = window.SB || {};
     sparkBurst(x, y + usz * 0.2, 3, '#ff9aa8');
     if (u.hp <= 0) {
       u.dying = true;
+      G.stats.unitDeaths++;
       sparkBurst(x, laneY(u.lane) - laneH * 0.3, 14, '#8fa8d8');
       shards(x, laneY(u.lane) - laneH * 0.3, 4, '#b8c6e8');
       addShake(4, 0.16);
@@ -1202,7 +1485,12 @@ window.SB = window.SB || {};
   }
 
   function castleHit(n) {
-    G.hp = Math.max(0, G.hp - n * enemyDamageMult());
+    // no single blow may take more than 45% of the wall: a boss breakthrough hurts
+    // badly but always leaves one more desperate defense
+    const dmg = Math.min(n * enemyDamageMult(), G.maxHp * 0.45);
+    G.stats.wallHits++;
+    G.stats.dmgTaken += dmg;
+    G.hp = Math.max(0, G.hp - dmg);
     G.waveDamaged = true;
     G.hitFlash = 0.35;
     G.edgeFlash = 1;
@@ -1221,7 +1509,7 @@ window.SB = window.SB || {};
     G.runT += dt;
     // charge
     if (G.charges < G.maxCharges) {
-      G.chargeT += dt * (G.feverOn ? 1.9 : 1) * (G.mods.spin || 1);
+      G.chargeT += dt * (G.feverOn ? 1.9 : 1) * (G.frenzyT > 0 ? 1.6 : 1) * (G.mods.spin || 1);
       if (G.chargeT >= 1.15) {
         G.chargeT = 0;
         G.charges = Math.min(G.maxCharges, G.charges + 1);
@@ -1263,6 +1551,17 @@ window.SB = window.SB || {};
       }
     }
 
+    if (G.frenzyT > 0) {
+      G.frenzyT -= dt;
+      if (G.frenzyT <= 0) { G.frenzyT = 0; document.body.classList.remove('frenzy'); }
+      else if (Math.random() < dt * 6) spark(rnd(0, W), rnd(H * 0.1, H), Math.random() < 0.5 ? '#ff7ecb' : '#ffd166', 0.7);
+    }
+    for (let mi = G.meteors.length - 1; mi >= 0; mi--) {
+      const m = G.meteors[mi];
+      m.y += m.vy * dt;
+      if (m.y >= laneY(m.lane) - laneH * 0.30) { meteorImpact(m); G.meteors.splice(mi, 1); }
+    }
+
     if (G.draftPend > 0) {
       G.draftPend -= dt;
       if (G.draftPend <= 0) { G.draftPend = 0; if (G.state === 'playing') showDraft(); }
@@ -1282,11 +1581,11 @@ window.SB = window.SB || {};
   function waveCleared() {
     G.waveState = 'cleared';
     G.stats.waves++;
-    if (!G.waveDamaged) { G.stats.flawlessWaves++; }
+    if (!G.waveDamaged) bump('flawlessWaves');
+    if ((G.waveStats.rerolls || 0) <= 1) bump('thrifty');
+    if (G.held.filter(Boolean).length >= 2) bump('holdClear');
     G.questDirty = true;
-    const bonus = Math.round((20 + G.wave * 7) * (G.mods.gold || 1));
-    G.gold += bonus;
-    G.stats.goldEarned += bonus;
+    const bonus = gainGold(20 + G.wave * 7);
     G.score += 100 + G.wave * 40;
     G.hp = Math.min(G.maxHp, G.hp + 1);
     S.waveClear();
@@ -1415,6 +1714,26 @@ window.SB = window.SB || {};
       e.atkAnim = Math.max(0, e.atkAnim - dt);
       e.bob += dt * 3;
       e.cd -= dt;
+      if (e.stun > 0) { e.stun -= dt; if (Math.random() < dt * 10) spark(e.x * W, laneY(e.lane) - laneH * 0.4, '#9fe8ff', 0.6); continue; }
+      // boss breakthrough: a boss lowers its shoulder and bulldozes straight toward the wall
+      if (e.boss) {
+        if (e.dashT > 0) {
+          e.dashT -= dt;
+          e.x = Math.max(0.09, e.x - (e.spd * BAL.bossDash * dt) / W);
+          if (Math.random() < dt * 26) spark(e.x * W, laneY(e.lane) - laneH * 0.3, '#ff8a9c', 1.3);
+          if (e.x - castleX < W * 0.05 && e.dashHit !== G.wave) { e.dashHit = G.wave; castleHit(e.dmg * 0.85); addShake(14, 0.5); }
+          continue;
+        }
+        e.dashCd = (e.dashCd === undefined ? 4.0 : e.dashCd) - dt;
+        if (e.dashCd <= 0 && e.x > 0.30) {
+          e.dashCd = BAL.bossDashCd;
+          e.dashT = BAL.bossDashT;
+          S.boss();
+          banner(I.t('wave.boss'), I.t('wave.bossDash'), '', true);
+          ring(e.x * W, laneY(e.lane) - laneH * 0.32, '#ff5a6e', 2.4);
+          addShake(9, 0.35);
+        }
+      }
       const ex = e.x * W;
       // nearest unit ahead
       let target = null, best = Infinity;
@@ -1426,7 +1745,7 @@ window.SB = window.SB || {};
         const d = ex - ux;
         if (d < best) { best = d; target = u; }
       }
-      const rangePx = e.ranged ? Math.min(e.ranged * laneH, W * 0.34) : Math.min(laneH * (e.size * 0.62), W * 0.10);
+      const rangePx = e.ranged ? Math.min(e.ranged * laneH, W * 0.34) : Math.min(laneH * (e.size * 0.62) * BAL.reach, W * 0.18);
       let attacking = false;
       if (target && best <= rangePx) {
         attacking = true;
@@ -1721,6 +2040,7 @@ window.SB = window.SB || {};
     });
 
     drawProjectiles();
+    drawMeteors();
     drawBeams();
     drawParticles();
     drawTexts();
@@ -2208,6 +2528,30 @@ window.SB = window.SB || {};
     }
   }
 
+  function drawMeteors() {
+    G.meteors.forEach(function (m) {
+      const y = m.y;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const trail = ctx.createLinearGradient(m.x, y - H * 0.42, m.x, y);
+      trail.addColorStop(0, 'rgba(255,120,40,0)');
+      trail.addColorStop(0.65, 'rgba(255,150,60,0.35)');
+      trail.addColorStop(1, 'rgba(255,220,140,0.75)');
+      ctx.fillStyle = trail;
+      ctx.beginPath();
+      ctx.moveTo(m.x - 10, y); ctx.lineTo(m.x + 10, y);
+      ctx.lineTo(m.x + 26, y - H * 0.42); ctx.lineTo(m.x - 26, y - H * 0.42);
+      ctx.closePath(); ctx.fill();
+      const g = ctx.createRadialGradient(m.x, y, 2, m.x, y, 34);
+      g.addColorStop(0, 'rgba(255,255,235,1)');
+      g.addColorStop(0.45, 'rgba(255,170,60,0.95)');
+      g.addColorStop(1, 'rgba(200,60,20,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(m.x, y, 34, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    });
+  }
+
   function drawProjectiles() {
     G.projs.forEach(function (p) {
       ctx.save();
@@ -2423,10 +2767,14 @@ window.SB = window.SB || {};
     });
     $('rerollBtn').addEventListener('click', function () {
       if (G.state !== 'playing' || G.spinning) return;
-      const cost = G.rerollCost;
+      const free = G.freeRerolls > 0;
+      const cost = free ? 0 : G.rerollCost;
       if (G.gold < cost) { toast(I.t('slot.needGold')); S.hurt(); return; }
       G.gold -= cost;
-      G.rerollCost = Math.min(30, G.rerollCost + 5);
+      if (free) G.freeRerolls -= 1;
+      else { G.rerollStreak = (G.rerollStreak || 0) + 1; refreshRerollCost(); }
+      bump('rerolls');
+      G.waveStats.rerolls = (G.waveStats.rerolls || 0) + 1;
       S.click();
       // replace pending summons then spin again
       if (G.pendingT > 0) {
@@ -2444,6 +2792,18 @@ window.SB = window.SB || {};
       hud();
     });
     $('draftReroll').addEventListener('click', rerollDraft);
+    ['btnDeckMenu', 'btnDeckPause', 'btnDeckOver', 'btnDeckSlot'].forEach(function (id) {
+      const el = $(id);
+      if (el) el.addEventListener('click', function () { if (G.state !== 'playing') openDeck(); });
+    });
+    if ($('btnDeckClose')) $('btnDeckClose').addEventListener('click', function () { S.click(); hide('deckOverlay'); });
+    ['btnBolt', 'btnMeteor'].forEach(function (id) {
+      const el = $(id);
+      if (!el) return;
+      el.addEventListener('click', function () { S.init(); S.resume(); S.click(); castOrdnance(id === 'btnBolt' ? 'bolt' : 'meteor'); });
+    });
+    if ($('btnRevive')) $('btnRevive').addEventListener('click', function () { S.click(); reviveRun(false); });
+    if ($('btnReviveVip')) $('btnReviveVip').addEventListener('click', function () { S.click(); reviveRun(true); });
     $('vipSubmit').addEventListener('click', redeemCode);
     $('vipCode').addEventListener('keydown', function (e) { if (e.key === 'Enter') redeemCode(); });
     window.addEventListener('resize', function () { layout(); measureReels(); });
@@ -2464,6 +2824,10 @@ window.SB = window.SB || {};
         S.setMuted(!S.isMuted()); I.apply();
       } else if (k === 'escape' || k === 'p') {
         if (G.state === 'playing' || G.state === 'paused') togglePause();
+      } else if (k === 'q' && G.state === 'playing') {
+        castOrdnance('bolt');
+      } else if (k === 'e' && G.state === 'playing') {
+        castOrdnance('meteor');
       } else if (k === 'r' && G.state === 'playing') {
         $('rerollBtn').click();
       }
@@ -2513,6 +2877,9 @@ window.SB = window.SB || {};
         state: G.state, wave: G.wave, waveState: G.waveState, hp: G.hp, maxHp: G.maxHp,
         gold: Math.floor(G.gold), score: Math.floor(G.score), fever: Math.round(G.fever),
         feverOn: G.feverOn, charges: G.charges, rerollCost: G.rerollCost, zone: zoneIndex(), spinning: G.spinning,
+        frenzy: G.frenzyT > 0, frenzyT: +G.frenzyT.toFixed(1), trialOn: !!G.trialOn, trialAvailable: trialAvailable(),
+        meteors: G.meteors.length, revived: !!G.revived, dmgTaken: G.stats.dmgTaken, unitDeaths: G.stats.unitDeaths,
+        ord: JSON.parse(JSON.stringify(G.ord)), freeRerolls: G.freeRerolls,
         quests: G.quests && G.quests.map ? G.quests.map(function (q) { return { id: q.id, stat: q.stat, cur: Math.min(G.stats[q.stat] || 0, q.target), target: q.target, done: !!q.claimed, reward: rewardText(q) }; }) : [],
         units: G.units.filter ? G.units.map(function (u) { return { t: u.type, tier: u.tier, lane: u.lane, hp: Math.round(u.hp), pending: +u.pending.toFixed(2) }; }) : [],
         enemies: G.enemies.map(function (e) { return { t: e.type, lane: e.lane, x: +e.x.toFixed(2), hp: Math.round(e.hp) }; }),
@@ -2521,8 +2888,142 @@ window.SB = window.SB || {};
         fx: { parts: G.parts.length, projs: G.projs.length, texts: G.texts.length, beams: G.beams.length }
       };
     },
+    balance: function () {
+      const costs = {};
+      [1, 2, 3, 4, 5, 8, 10, 15, 20].forEach(function (w) { costs[w] = rerollBaseCost(w); });
+      return {
+        hpCurve: BAL.hpCurve, dmgCurve: BAL.dmgCurve, countBase: BAL.countBase, countPerWave: BAL.countPerWave,
+        bossBudget: BAL.bossBudget, bossHp: BAL.bossHp, bossDmg: BAL.bossDmg, bossSpd: BAL.bossSpd, reach: BAL.reach,
+        bossDash: BAL.bossDash, bossDashT: BAL.bossDashT, bossDashCd: BAL.bossDashCd,
+        goldMul: BAL.goldMul, rerollBase: BAL.rerollBase, rerollWave: BAL.rerollWave, rerollStep: BAL.rerollStep,
+        rerollCostAtWave: costs, bossHpAtWave: [5, 10, 15].map(function (w) { return Math.round(ENEMY.boss.hp * Math.pow(BAL.hpCurve, w - 1) * (1 + w * 0.03) * BAL.bossHp); })
+      };
+    },
+    // Headless play simulation: fixed-step update() loop, seeded RNG, no rendering.
+    // strategy 'dumb' = spin whenever charged, never hold or reroll; 'smart' = hold
+    // a pair, reroll a miss, draft the best relic. Returns a per-wave table.
+    sim: function (opts) {
+      opts = opts || {};
+      if (opts.tune) Object.keys(opts.tune).forEach(function (k) { if (k in BAL) BAL[k] = opts.tune[k]; });
+      const mode = opts.strategy || 'smart';
+      const maxWave = opts.maxWave || 8;
+      const dt = 1 / 60;
+      const openRng = Math.random;
+      let seed = (opts.seed || 7) >>> 0;
+      Math.random = function () {
+        seed = (seed + 0x6D2B79F5) >>> 0;
+        let x = seed;
+        x = Math.imul(x ^ (x >>> 15), x | 1);
+        x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+        return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+      };
+      const wasMuted = S.isMuted();
+      S.setMuted(true);
+      const log = [];
+      let totalSpins = 0, totalRerolls = 0;
+      const PICK = ['jackpot', 'command', 'crit', 'speed', 'fever', 'double', 'pierce', 'rapid', 'shield', 'vamp', 'thunder', 'heavy', 'arcane', 'bounty', 'gold', 'wall'];
+      try {
+        G.state = 'playing';
+        hide('menuOverlay'); hide('gameoverOverlay'); hide('pauseOverlay'); hide('draftOverlay');
+        resetRun();
+        G.coachStep = 0; paintCoach();
+        document.getElementById('app').setAttribute('data-state', 'playing');
+        startWave(1);
+        let t = 0, step = 0, spinW = 0, rerollW = 0, wT = 0, wKills = G.stats.kills, wDmg = 0, wDeaths = 0;
+        while (step < (opts.maxSec || 2400) * 60) {
+          if (G.state === 'gameover' || G.wave > maxWave) break;
+          if (G.state === 'draft') {
+            let best = 0;
+            if (mode !== 'dumb') {
+              let rank = 999;
+              G.draft.forEach(function (r, i) {
+                const k = PICK.indexOf(r.id);
+                if (k < 0 || k >= rank) return;
+                rank = k; best = i;
+              });
+            }
+            pickDraft(best);
+            continue;
+          }
+          if (G.state !== 'playing') break;
+          if (G.waveState === 'active' && !G.spinning && G.pendingT <= 0) {
+            const missed = !!(G.lastSpin && G.lastSpin.kind === 'none');
+            if (mode !== 'dumb' && missed && rerollW < 3 && G.gold >= G.rerollCost + 25) {
+              G.gold -= G.rerollCost;
+              G.rerollStreak = (G.rerollStreak || 0) + 1;
+              refreshRerollCost();
+              G.lastRerollSpin = true;
+              doSpin(true);
+              totalRerolls++; rerollW++;
+            } else if (G.charges >= 1) {
+              if (mode !== 'dumb') {
+                const syms = [G.reels[0].sym, G.reels[1].sym, G.reels[2].sym];
+                const cnt = {};
+                syms.forEach(function (s) { cnt[s] = (cnt[s] || 0) + 1; });
+                let bestSym = null, bestN = 1;
+                Object.keys(cnt).forEach(function (k) { if (cnt[k] > bestN) { bestN = cnt[k]; bestSym = k; } });
+                G.held = [false, false, false];
+                let locks = 0;
+                for (let i = 0; i < 3 && bestSym; i++) {
+                  if (syms[i] === bestSym && locks < 2) { G.held[i] = true; locks++; }
+                }
+              }
+              if (doSpin(false)) { totalSpins++; spinW++; }
+            }
+          }
+          update(dt);
+          step++; t += dt;
+          if (G.waveState === 'cleared' && (!log.length || log[log.length - 1].wave !== G.wave)) {
+            log.push({
+              wave: G.wave, gold: Math.floor(G.gold), hp: Math.round(G.hp),
+              kills: G.stats.kills - wKills, spins: spinW, rerolls: rerollW,
+              dmgTaken: G.stats.dmgTaken - wDmg, deaths: G.stats.unitDeaths - wDeaths,
+              secs: Math.round(t - wT), relics: G.relics.length, goldEarned: G.stats.goldEarned
+            });
+            wKills = G.stats.kills; wDmg = G.stats.dmgTaken; wDeaths = G.stats.unitDeaths; wT = t; spinW = 0; rerollW = 0;
+          }
+        }
+        const out = {
+          strategy: mode, seed: opts.seed || 7, maxWave: maxWave,
+          reachedWave: G.wave, hp: Math.round(G.hp), maxHp: G.maxHp, gold: Math.floor(G.gold),
+          gameover: G.state === 'gameover', spins: totalSpins, rerolls: totalRerolls,
+          goldEarned: G.stats.goldEarned, kills: G.stats.kills, dmgTaken: G.stats.dmgTaken, waves: log
+        };
+        G.state = 'gameover';
+        return out;
+      } finally {
+        Math.random = openRng;
+        S.setMuted(wasMuted);
+      }
+    },
     spin: function () { return doSpin(true); },
+    tick: function (seconds) {
+      const dt = 1 / 60;
+      const n = Math.min(36000, Math.round((seconds || 1) * 60));
+      for (let i = 0; i < n; i++) update(dt);
+      return { wave: G.wave, hp: G.hp, units: G.units.length, enemies: G.enemies.length, dmgTaken: G.stats.dmgTaken, deaths: G.stats.unitDeaths, kills: G.stats.kills };
+    },
     spinCost: function () { return doSpin(false); },
+    symbol: function (sym, lane) {
+      const ln = lane === undefined ? 1 : lane;
+      G.lastSpin = { syms: [sym, sym, sym], kind: 'triple' };
+      G.reels.forEach(function (r, i) { r.sym = sym; refreshStrip(i, sym); });
+      G.spinning = false;
+      resolveSpin();
+      commitPending();
+      return { units: G.units.length, enemies: G.enemies.length };
+    },
+    cast: function (sym) { summonSpecial(sym, 1, 0, 0); return true; },
+    deck: function () { return DECK_ITEMS.map(function (k) { return { id: k, status: deckStatus(k) }; }); },
+    trialReset: function () { try { localStorage.removeItem('moa.ss.trial'); } catch (e) {} G.trialOn = trialAvailable(); return G.trialOn; },
+    vipSet: function (v) {
+      G.vip = !!v;
+      try { localStorage.setItem('moa.ss.vip', v ? '1' : '0'); } catch (e) {}
+      if (v && G.relics.indexOf('holy') < 0) addRelic('holy', true);
+      $('vipBadge').hidden = !G.vip;
+      hud();
+      return G.vip;
+    },
     jackpot: function () {
       G.lastSpin = { syms: ['knight', 'knight', 'knight'], kind: 'triple' };
       G.reels.forEach(function (r, i) { r.sym = 'knight'; refreshStrip(i, 'knight'); });
@@ -2588,18 +3089,21 @@ window.SB = window.SB || {};
     draftOpen: function () { showDraft(); return G.draft.map(function (r) { return r.id; }); },
     pickDraft: function (i) { pickDraft(i); },
     addRelic: function (id) { addRelic(id); return G.relics.slice(); },
+    ord: function (kind, n) { G.ord[kind] = Math.max(0, (G.ord[kind] || 0) + (n === undefined ? 1 : n)); hud(); return G.ord; },
+    castOrd: function (kind) { return castOrdnance(kind); },
+    quests: function () { return G.quests.map(function (q) { return { id: q.id, stat: q.stat, scope: q.scope, cur: questValue(q), target: q.target, reward: rewardText(q) }; }); },
+    waveStats: function () { return JSON.parse(JSON.stringify(G.waveStats)); },
     gold: function (n) { gainGold(n); },
     setGold: function (n) { G.gold = n; hud(); return G.gold; },
     progress: function (stat, n) {
-      G.stats[stat] = (G.stats[stat] || 0) + (n || 1);
-      G.questDirty = true;
+      bump(stat, n || 1);
       checkQuests();
       if (G.questDirty) renderQuests();
       return G.stats[stat];
     },
     fever: function () { startFever(); },
     god: function () { G.maxHp = 9999; G.hp = 9999; },
-    die: function () { castleHit(9999); },
+    die: function () { G.hp = 0; hud(); gameOver(); return G.state; },
     killAll: function () { G.enemies.forEach(function (e) { killEnemy(e); }); G.enemies = []; },
     shotScene: function () {
       G.coachStep = 0; paintCoach();
@@ -2704,6 +3208,7 @@ window.SB = window.SB || {};
     SB.Game = {
       onLangChange: function () {
         relabelReels();
+        if ($('deckOverlay').classList.contains('show')) renderDeck();
         G.questDirty = true;
         if (G.quests.length) renderQuests();
         $('bestScore').textContent = G.best;
@@ -2718,9 +3223,26 @@ window.SB = window.SB || {};
     setTimeout(function () { measureReels(); }, 120);
   }
 
+  function questPool() {
+    const w = Math.max(1, G.wave);
+    const avail = QUESTS.filter(function (q) { return (q.minWave || 1) <= w; });
+    return avail.length ? avail : QUESTS;
+  }
+  function drawQuest() {
+    const active = G.quests.map(function (q) { return q.id; });
+    const pool = questPool().filter(function (q) {
+      return active.indexOf(q.id) < 0 && G.questDone.indexOf(q.id) < 0;
+    });
+    if (!pool.length) return null;
+    const copy = Object.assign({}, pool[(Math.random() * pool.length) | 0]);
+    copy.claimed = false;
+    copy.base = copy.scope === 'wave' ? (G.waveStats[copy.stat] || 0) : 0;
+    return copy;
+  }
   function buildQuestLog() {
-    G.quests = QUESTS.slice(0, 2).map(function (q) { const o = Object.assign({}, q); o.claimed = false; return o; });
     G.questDone = [];
+    G.quests = [];
+    for (let i = 0; i < 2; i++) { const q = drawQuest(); if (q) G.quests.push(q); }
     G.questDirty = true;
   }
 
@@ -2730,7 +3252,7 @@ window.SB = window.SB || {};
     for (let i = 0; i < G.quests.length; i++) {
       const q = G.quests[i];
       if (q.claimed) continue;
-      if ((G.stats[q.stat] || 0) < q.target) continue;
+      if (questValue(q) < q.target) continue;
       q.claimed = true;
       changed = true;
       if (q.reward.gold) { gainGold(q.reward.gold); floatReward('+' + q.reward.gold + 'G', '#ffd76a'); }
@@ -2746,17 +3268,24 @@ window.SB = window.SB || {};
         floatReward('+' + q.reward.charge + ' SPIN', '#8fe9ff');
         ring(reelX(1), H - laneH * 0.2, '#8fe9ff', 1.6);
       }
+      if (q.reward.rerollFree) {
+        G.freeRerolls += q.reward.rerollFree;
+        floatReward('FREE REROLL +' + q.reward.rerollFree, '#9fe8ff');
+        ring(reelX(2), H - laneH * 0.2, '#9fe8ff', 1.6);
+      }
+      if (q.reward.ord) {
+        const k = q.reward.ord;
+        G.ord[k] = Math.min(5, (G.ord[k] || 0) + 1);
+        floatReward((k === 'bolt' ? '⚡ +1' : '🔥 +1'), k === 'bolt' ? '#9fe8ff' : '#ffc271');
+        ring(G.slots[0] * W, laneY(1), k === 'bolt' ? '#9fe8ff' : '#ffc271', 1.8);
+        S.levelUp();
+      }
       missionPop(q);
       toast(I.t('toast.quest', { reward: rewardText(q) }), 'gold');
       G.questDone.push(q.id);
-      const active = G.quests.map(function (x) { return x.id; });
-      const next = QUESTS.find(function (x) {
-        return active.indexOf(x.id) < 0 && G.questDone.indexOf(x.id) < 0;
-      });
-      if (next) {
-        const copy = Object.assign({}, next); copy.claimed = false;
-        G.quests[i] = copy;
-      }
+      G.quests[i].claimed = true;
+      const next = drawQuest();
+      if (next) G.quests[i] = next;
     }
     if (changed) { G.questDirty = true; hud(); }
   }

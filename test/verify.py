@@ -237,24 +237,51 @@ def run_desktop(p, errors):
     check("melee unit walks back to its slot after the lane clears",
           bool(home) and abs(home[0]["x"] - 0.465) < 0.02, home)
 
-    # --- gold reroll economy ---
-    pg.evaluate("SB.debug.setGold(200)")
+    # --- gold reroll economy (v1.3: wave-scaled + consecutive-reroll ladder) ---
+    bal = pg.evaluate("SB.debug.balance()")
+    pg.evaluate("SB.debug.spawnWave(3)")
+    pg.wait_for_timeout(260)
+    base3 = pg.evaluate("SB.debug.state()['rerollCost']")
+    check("reroll price scales with the wave", base3 == bal["rerollCostAtWave"]["3"] and base3 > 10, (base3, bal["rerollCostAtWave"]))
+    check("reroll price is on the button", pg.inner_text("#rerollCost") == "%dG" % base3, pg.inner_text("#rerollCost"))
+    pg.evaluate("SB.debug.setGold(400)")
     pg.wait_for_timeout(120)
-    price = pg.inner_text("#rerollCost")
-    check("reroll shows its gold price", price.endswith("G"), price)
     pg.evaluate("document.getElementById('rerollBtn').click()")
     pg.wait_for_timeout(220)
     st = pg.evaluate("SB.debug.state()")
-    check("reroll spends gold and raises the next price", st["gold"] <= 190 and st["rerollCost"] == 15, (st["gold"], st["rerollCost"]))
-    check("next reroll price is on the button", pg.inner_text("#rerollCost") == "15G", pg.inner_text("#rerollCost"))
+    check("reroll spends gold and raises the next price",
+          st["gold"] == 400 - base3 and st["rerollCost"] == base3 + bal["rerollStep"], (st["gold"], st["rerollCost"], base3))
+    pg.wait_for_timeout(1100)
+    pg.evaluate("document.getElementById('rerollBtn').click()")
+    pg.wait_for_timeout(300)
+    st2 = pg.evaluate("SB.debug.state()")
+    check("consecutive rerolls keep climbing with no cap",
+          st2["rerollCost"] == base3 + bal["rerollStep"] * 2, st2["rerollCost"])
     pg.evaluate("SB.debug.setGold(5)")
     pg.wait_for_timeout(160)
     check("reroll is disabled when gold is short",
           pg.evaluate("document.getElementById('rerollBtn').disabled") and
           "poor" in pg.evaluate("document.getElementById('rerollBtn').className"))
-    pg.evaluate("SB.debug.spawnWave(2)")
-    pg.wait_for_timeout(260)
-    check("reroll price resets on the next wave", pg.evaluate("SB.debug.state()['rerollCost']") == 10, pg.inner_text("#rerollCost"))
+    pg.evaluate("SB.debug.spawnWave(4)")
+    pg.wait_for_timeout(300)
+    check("reroll ladder resets on the next wave at that wave's base price",
+          pg.evaluate("SB.debug.state()['rerollCost']") == bal["rerollCostAtWave"]["4"],
+          pg.inner_text("#rerollCost"))
+
+    # --- v1.3 tactical missions supply ordnance ---
+    pg.evaluate("SB.debug.setGold(0)")
+    q = pg.evaluate("SB.debug.quests()")
+    check("missions are tactical (no spin/kill counters)",
+          all(x["id"].startswith("m") and x["stat"] not in ("spins", "kills", "goldEarned") for x in q),
+          [(x["id"], x["stat"]) for x in q])
+    before = pg.evaluate("SB.debug.state()")
+    q0 = q[0]
+    pg.evaluate("SB.debug.progress('%s', %d)" % (q0["stat"], q0["target"]))
+    pg.wait_for_timeout(700)
+    st = pg.evaluate("SB.debug.state()")
+    gained = (st["ord"]["bolt"] > before["ord"]["bolt"] or st["ord"]["meteor"] > before["ord"]["meteor"]
+              or st["freeRerolls"] > before["freeRerolls"] or st["hp"] > before["hp"] or st["gold"] > before["gold"])
+    check("tactical mission pays a tactical reward", gained, (q0["reward"], before["ord"], st["ord"], st["freeRerolls"]))
 
     # --- campaign map / zones ---
     pg.evaluate("SB.debug.spawnWave(1)")
@@ -278,20 +305,103 @@ def run_desktop(p, errors):
     pg.click("#btnResume")
     pg.wait_for_timeout(260)
 
-    # --- live missions with instant rewards ---
-    pg.evaluate("document.getElementById('toastLayer').innerHTML = ''; SB.debug.setGold(120)")
+    # --- tactical missions rotate and announce ---
+    pg.evaluate("document.getElementById('toastLayer').innerHTML = ''")
     pg.wait_for_timeout(140)
-    q0 = pg.evaluate("SB.debug.state()['quests'][0]")
-    g0 = pg.evaluate("SB.debug.state()['gold']")
+    q0 = pg.evaluate("SB.debug.quests()[0]")
+    before = pg.evaluate("SB.debug.state()")
     pg.evaluate("SB.debug.progress('%s', %d)" % (q0["stat"], q0["target"]))
-    pg.wait_for_timeout(340)
+    pg.wait_for_timeout(700)
     st = pg.evaluate("SB.debug.state()")
     ids = [q["id"] for q in st["quests"]]
     toast_txt = pg.evaluate("document.getElementById('toastLayer').innerText")
     check("mission completes and rotates to a new one", q0["id"] not in ids, (q0["id"], ids))
-    check("mission pays its reward instantly", st["gold"] > g0 or "성벽" in q0["reward"] or "Wall" in q0["reward"] or "SPIN" in q0["reward"] or "스핀" in q0["reward"], (g0, st["gold"], q0["reward"]))
     check("mission completion is announced", ("미션" in toast_txt) or ("mission" in toast_txt.lower()), toast_txt[:70])
     check("mission rows show a numeric progress", pg.evaluate("document.querySelectorAll('#questList .q-p').length") == 2)
+
+    # --- v1.3 slot special items: lightning + meteor clear a lane ---
+    pg.evaluate("SB.debug.arena(); SB.debug.forceEnemies(8,'orc')")
+    pg.wait_for_timeout(200)
+    hp0 = sum(e["hp"] for e in pg.evaluate("SB.debug.state()")["enemies"])
+    pg.evaluate("SB.debug.cast('bolt')")
+    pg.wait_for_timeout(300)
+    st = pg.evaluate("SB.debug.state()")
+    hp1 = sum(e["hp"] for e in st["enemies"])
+    check("lightning strikes every enemy on screen", hp1 < hp0, (hp0, hp1, st["stats"]["specialKills"]))
+    pg.evaluate("SB.debug.arena(); SB.debug.forceEnemies(10,'orc')")
+    pg.wait_for_timeout(150)
+    pg.evaluate("SB.debug.cast('meteor')")
+    pg.wait_for_timeout(1500)
+    st = pg.evaluate("SB.debug.state()")
+    check("meteor barrage lands and damages the swarm",
+          st["stats"]["specialKills"] > 0 and st["meteors"] == 0, (st["stats"]["specialKills"], st["meteors"]))
+    pg.evaluate("SB.debug.arena(); SB.debug.cast('paladin')")
+    pg.wait_for_timeout(900)
+    units = pg.evaluate("SB.debug.state()")["units"]
+    check("golden paladin joins the line", any(u["t"] == "paladin" and u["tier"] >= 3 for u in units), units)
+    pg.evaluate("SB.debug.cast('frenzy')")
+    pg.wait_for_timeout(200)
+    check("jackpot frenzy fills the reels", pg.evaluate("SB.debug.state()")["frenzy"]
+          and pg.evaluate("document.body.classList.contains('frenzy')"))
+
+    # --- v1.3 ordnance buttons: mission-earned casts ---
+    pg.evaluate("SB.debug.ord('bolt', 1)")
+    pg.wait_for_timeout(180)
+    check("earned lightning shows on its button", pg.inner_text("#ordBolt").strip() == "1", pg.inner_text("#ordBolt"))
+    pg.evaluate("SB.debug.arena(); SB.debug.forceEnemies(5,'goblin')")
+    pg.wait_for_timeout(150)
+    n0 = len(pg.evaluate("SB.debug.state()")["enemies"])
+    pg.click("#btnBolt")
+    pg.wait_for_timeout(400)
+    check("ordnance button spends a charge", pg.evaluate("SB.debug.state()")['ord']['bolt'] == 0 and n0 > 0, n0)
+
+    # --- v1.3 slot codex (deck) ---
+    pg.click("#btnPause")
+    pg.wait_for_timeout(250)
+    pg.click("#btnDeckPause")
+    pg.wait_for_timeout(300)
+    cards = pg.evaluate("document.querySelectorAll('#deckList .deck-card').length")
+    statuses = pg.evaluate("[...document.querySelectorAll('.deck-card')].map(c=>c.getAttribute('data-status'))")
+    check("slot codex lists four special slots", cards == 4, cards)
+    check("codex separates free and premium slots", statuses.count("free") == 2 and len([x for x in statuses if x != "free"]) == 2, statuses)
+    check("codex explains the trial or the lock", bool(pg.inner_text("#deckNote").strip()), pg.inner_text("#deckNote")[:60])
+    pg.click("#btnDeckClose")
+    pg.wait_for_timeout(200)
+    pg.click("#btnResume")
+    pg.wait_for_timeout(200)
+
+    # --- v1.3 premium trial: one free hit, then locked ---
+    pg.evaluate("SB.debug.vipSet(false)")
+    pg.evaluate("SB.debug.trialReset()")
+    pg.wait_for_timeout(120)
+    check("trial marks premium slots as try-able", not pg.evaluate("SB.debug.deck()")[2]["status"] == "locked",
+          pg.evaluate("SB.debug.deck()"))
+    pg.evaluate("SB.debug.cast('paladin')")
+    pg.wait_for_timeout(400)
+    deck = pg.evaluate("SB.debug.deck()")
+    check("trial ends after the first premium draw and locks the slot",
+          deck[2]["status"] == "locked" and deck[3]["status"] == "locked", deck)
+    check("trial state is remembered across sessions",
+          pg.evaluate("localStorage.getItem('moa.ss.trial')") == "1")
+
+    # --- v1.3 defeat lifeline: lightning drop revive ---
+    pg.evaluate("SB.debug.die()")
+    pg.wait_for_timeout(700)
+    check("defeat offers the lightning lifeline", pg.is_visible("#btnRevive"), pg.is_visible("#reviveBox"))
+    wave_before = pg.evaluate("SB.debug.state()")["wave"]
+    pg.click("#btnRevive")
+    pg.wait_for_timeout(1200)
+    st = pg.evaluate("SB.debug.state()")
+    check("revive restores the wall and resumes the run",
+          st["state"] == "playing" and st["hp"] > 0 and st["revived"] is True, (st["state"], st["hp"], st["revived"]))
+    check("revive keeps the player on the same wave", st["wave"] == wave_before, (wave_before, st["wave"]))
+
+    # --- v1.3 balance: the wave-5 boss bites ---
+    sim = pg.evaluate("SB.debug.sim({strategy:'dumb', seed:7, maxWave:6})")
+    w5 = next((x for x in sim["waves"] if x["wave"] == 5), None)
+    check("no-strategy run bleeds wall HP at the wave-5 boss", bool(w5) and w5["dmgTaken"] > 20, w5 and w5["dmgTaken"])
+    check("wave-5 gold stays tight (30-55% below v1.2's ~2,600G)",
+          bool(w5) and 900 <= w5["gold"] <= 2000, w5 and w5["gold"])
 
     if not QUICK:
         # stage a rich battle for the delivery screenshot

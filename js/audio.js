@@ -201,6 +201,27 @@ window.SB = window.SB || {};
       tone({ f: 110, f2: 36, type: 'sine', dur: 0.30, v: 0.22 });
     },
 
+    thunder: function () {
+      if (!ctx) return;
+      noise({ fc: 5200, fc2: 220, dur: 0.26, v: 0.26 });
+      tone({ f: 180, f2: 46, type: 'sawtooth', dur: 0.55, v: 0.18, filter: 'lowpass', fc: 1200 });
+      noise({ fc: 900, fc2: 60, filter: 'lowpass', dur: 0.95, v: 0.20 });
+      tone({ f: 90, f2: 40, type: 'sine', dur: 1.1, v: 0.16 });
+    },
+
+    meteorFall: function () {
+      if (!ctx) return;
+      tone({ f: 640, f2: 90, type: 'sawtooth', dur: 0.55, v: 0.10, filter: 'lowpass', fc: 2400 });
+      noise({ fc: 2600, fc2: 260, dur: 0.6, v: 0.10 });
+    },
+
+    meteorHit: function () {
+      if (!ctx) return;
+      noise({ fc: 720, fc2: 45, filter: 'lowpass', dur: 0.6, v: 0.30 });
+      tone({ f: 96, f2: 28, type: 'sine', dur: 0.7, v: 0.30 });
+      tone({ f: 230, f2: 60, type: 'triangle', dur: 0.35, v: 0.14 });
+    },
+
     hurt: function () {
       if (!ctx || !throttle('hurt', 130)) return;
       tone({ f: 150, f2: 48, type: 'square', dur: 0.24, v: 0.18, filter: 'lowpass', fc: 800 });
