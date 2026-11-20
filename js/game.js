@@ -54,6 +54,11 @@ window.SB = window.SB || {};
     bossDashT: 1.0,      // seconds per breakthrough dash
     bossDashCd: 7.0,     // seconds between dashes
     reach: 1.00,         // enemy melee reach multiplier — how many can hit one unit at once
+    engageMaxX: 0.72,    // v1.3.1: an enemy never holds ground beyond this while fighting
+    enemyRangeCap: 0.26, // v1.3.1: ranged enemy standoff cap as a fraction of field width
+    sortieMax: 0.70,     // v1.3.1: melee units never charge past this (stays clear of the portal/UI)
+    entryRush: 2.4,      // v1.3.1: enemies walk out of the portal at this multiplier until the line
+    leanHome: 0.02,      // v1.3.1: how far in front of slot 1 ranged units may lean
     goldMul: 0.90,       // in-run gold income multiplier (v1.2: 1.00)
     rerollBase: 10,
     rerollWave: 3,       // extra reroll gold per wave (v1.2: 0)
@@ -72,7 +77,7 @@ window.SB = window.SB || {};
   const ENEMY = {
     goblin: { hp: 56, spd: 1.00, dmg: 8, atk: 1.15, gold: 4, size: 0.70, score: 12, from: 1 },
     orc: { hp: 158, spd: 0.76, dmg: 16, atk: 1.45, gold: 9, size: 0.84, score: 26, from: 2 },
-    skeleton: { hp: 82, spd: 0.64, dmg: 10, atk: 1.5, gold: 8, size: 0.78, score: 24, ranged: 1.65, from: 3 },
+    skeleton: { hp: 82, spd: 0.64, dmg: 10, atk: 1.5, gold: 8, size: 0.78, score: 24, ranged: 1.05, from: 3 },
     brute: { hp: 340, spd: 0.50, dmg: 25, atk: 1.9, gold: 16, size: 0.95, score: 55, armor: 0.22, from: 11 },
     wraith: { hp: 118, spd: 1.32, dmg: 13, atk: 1.25, gold: 11, size: 0.80, score: 32, from: 16 },
     boss: { hp: 1350, spd: 0.40, dmg: 44, atk: 1.75, gold: 140, size: 1.30, score: 400, armor: 0.12, boss: true }
@@ -132,6 +137,7 @@ window.SB = window.SB || {};
     shake: 0, shakeT: 0, hitFlash: 0, edgeFlash: 0, boltFlash: 0, hitStop: 0,
     laneFlash: [0, 0, 0], coachStep: 0, spinsSinceCoach: 0, auto: false, vip: false, vipRelic: false,
     pending: [], pendingT: 0, lastSpin: null, nextUnitId: 1, nextEnemyId: 1,
+    deckResume: false,
     thunderT: 0, boss: null, bossMaxHp: 0, meteors: [], trialOn: false, revived: false,
     scaleW: 1280, scaleH: 600, laneH: 200, castleX: 110, dpr: 1,
     stars: [], dust: [], hintShown: false, killsSinceToast: 0
@@ -261,8 +267,12 @@ window.SB = window.SB || {};
     if ($('ordBolt')) {
       $('ordBolt').textContent = G.ord.bolt;
       $('ordMeteor').textContent = G.ord.meteor;
-      $('btnBolt').disabled = !(G.ord.bolt > 0);
-      $('btnMeteor').disabled = !(G.ord.meteor > 0);
+      // v1.3.1: never disable — a disabled button swallows the click and looks broken.
+      // An empty charge is shown as a dimmed "0" badge and the press explains how to charge.
+      $('btnBolt').disabled = false;
+      $('btnMeteor').disabled = false;
+      $('btnBolt').classList.toggle('empty', !(G.ord.bolt > 0));
+      $('btnMeteor').classList.toggle('empty', !(G.ord.meteor > 0));
     }
     $('rerollBtn').disabled = G.spinning || poor;
     $('rerollBtn').classList.toggle('poor', poor);
@@ -376,7 +386,7 @@ window.SB = window.SB || {};
     G.held = [false, false, false];
     G.charges = 3; G.chargeT = 0;
     G.rerollCost = 10; G.rerollStreak = 0; G.lastRerollSpin = false; G.waveDamaged = false; G.zoneShown = -1;
-    G.ord = { bolt: 0, meteor: 0 }; G.freeRerolls = 0; G.lastHeld = 0;
+    G.ord = { bolt: 1, meteor: 1 }; G.freeRerolls = 0; G.lastHeld = 0;
     G.waveStats = { rerollMatch: 0, flawlessWaves: 0, thrifty: 0, heroTier: 0, holdClear: 0, rangedKills: 0, specialKills: 0, rerolls: 0, promos: 0 };
     G.fever = 0; G.feverT = 0; G.feverOn = false; G.frenzyT = 0;
     G.meteors = []; G.revived = false; G.trialOn = trialAvailable();
@@ -406,6 +416,8 @@ window.SB = window.SB || {};
     G.state = 'playing';
     resetRun();
     startCoach();
+    // v1.3.1: one free lightning + meteor per run so both buttons can be felt from wave 1
+    setTimeout(function () { if (G.state === 'playing') toast(I.t('ord.starter'), 'gold'); }, 1500);
     document.getElementById('app').setAttribute('data-state', 'playing');
     setTimeout(function () { startWave(1); }, 700);
     hud();
@@ -499,7 +511,21 @@ window.SB = window.SB || {};
     const note = $('deckNote');
     if (note) note.textContent = I.t(G.vip ? 'deck.vipNote' : trialAvailable() ? 'deck.trialNote' : 'deck.lockedNote');
   }
-  function openDeck() { renderDeck(); show('deckOverlay'); S.click(); }
+  // v1.3.1: the footer "슬롯 도감" button is visible mid-run, so it has to work mid-run.
+  // Opening the codex freezes the wave (state 'paused' without the pause card) and
+  // closing it drops straight back into the fight.
+  function openDeck() {
+    if (G.state === 'playing') { G.deckResume = true; G.state = 'paused'; }
+    renderDeck(); show('deckOverlay'); S.click();
+  }
+  function closeDeck() {
+    hide('deckOverlay');
+    if (G.deckResume) {
+      G.deckResume = false;
+      if (!anyOverlay()) G.state = 'playing';
+    }
+    S.click();
+  }
 
   /* ---- defeat lifeline: lightning drop / premium retry ---- */
   function reviveRun(premium) {
@@ -1072,9 +1098,12 @@ window.SB = window.SB || {};
   }
 
   function castOrdnance(kind) {
-    if (G.state !== 'playing' || G.spinning) return false;
-    if (!(G.ord[kind] > 0)) { toast(I.t('ord.empty')); return false; }
-    if (kind === 'meteor' && !G.enemies.length) { toast(I.t('ord.empty')); return false; }
+    if (G.state !== 'playing') return false;
+    if (!(G.ord[kind] > 0)) {
+      toast(I.t(kind === 'meteor' ? 'ord.emptyMeteor' : 'ord.emptyBolt'));
+      return false;
+    }
+    if (kind === 'meteor' && !G.enemies.length) { toast(I.t('ord.noTarget')); return false; }
     G.ord[kind] -= 1;
     if (kind === 'bolt') castBolt(1); else castMeteor(1);
     hud();
@@ -1617,22 +1646,33 @@ window.SB = window.SB || {};
       const def = UNIT[u.type];
       const rangePx = Math.min(def.range * laneH, W * 0.52);
       const home = G.slots[Math.min(u.slot, G.slots.length - 1)];
+      // nearest live enemy ahead in this lane — both formations use it to decide movement
+      let nearest = null, nd = Infinity;
+      for (let k = 0; k < G.enemies.length; k++) {
+        const e = G.enemies[k];
+        if (e.dead || e.lane !== u.lane) continue;
+        const dx = (e.x - u.x) * W;
+        if (dx <= 0) continue;
+        if (dx < nd) { nd = dx; nearest = e; }
+      }
+      // v1.3.1: a unit never walks into the one in front of it, so a charging
+      // column keeps its spacing instead of piling on a single point.
+      let aheadX = 0;
+      for (let k = 0; k < G.units.length; k++) {
+        const o = G.units[k];
+        if (o === u || o.dying || o.pending > 0 || o.lane !== u.lane) continue;
+        if (o.x > u.x + 0.001 && (!aheadX || o.x < aheadX)) aheadX = o.x;
+      }
+      const spacing = 0.05;
       // Melee sortie: an enemy archer holds outside sword reach, so step out of the
       // slot, close the gap, fight there, and walk back once the lane is clear.
       if (MELEE[u.type]) {
-        let nearest = null, nd = Infinity;
-        for (let k = 0; k < G.enemies.length; k++) {
-          const e = G.enemies[k];
-          if (e.dead || e.lane !== u.lane) continue;
-          const dx = (e.x - u.x) * W;
-          if (dx <= 0) continue;
-          if (dx < nd) { nd = dx; nearest = e; }
-        }
-        const maxPush = Math.min(0.90, home + (laneH * 3.0) / W);
+        let maxPush = Math.min(BAL.sortieMax, home + (laneH * 3.0) / W);
+        if (aheadX) maxPush = Math.min(maxPush, aheadX - spacing);
         const inWindow = !!nearest && nd < rangePx + laneH * 2.4;
-        if (inWindow && nd > rangePx * 0.70) {
-          u.x = Math.min(maxPush, u.x + (laneH * 1.45 * dt) / W);
-          u.charging = true;
+        if (inWindow && nd > rangePx * 0.60) {
+          u.x = Math.min(Math.max(home, maxPush), u.x + (laneH * 1.45 * dt) / W);
+          u.charging = u.x > home + 0.006;
           if (Math.random() < dt * 14) spark(u.x * W - laneH * 0.12, laneY(u.lane) - 2, '#9fb0dd', 0.4);
         } else if (!inWindow) {
           u.charging = false;
@@ -1642,6 +1682,22 @@ window.SB = window.SB || {};
           // close enough to swing: hold this spot until the enemy is gone
           u.charging = false;
         }
+      } else if (nearest) {
+        // v1.3.1 ranged lean: step forward *inside* the formation (never past slot 1
+        // and never into the unit ahead) until the target is in reach, so a deep slot
+        // does not stand idle while the lane is under fire. Steps back when the
+        // enemy closes and the extra reach is no longer needed.
+        let limit = Math.min(0.60, G.slots[0] + BAL.leanHome);
+        if (aheadX) limit = Math.min(limit, aheadX - spacing);
+        const need = clamp(nearest.x - rangePx / W, home, Math.max(home, limit));
+        if (u.x < need - 0.004) u.x = Math.min(need, u.x + (laneH * 1.15 * dt) / W);
+        else if (u.x > need + 0.01) u.x = Math.max(need, u.x - (laneH * 0.9 * dt) / W);
+        u.charging = u.x > home + 0.006;
+      } else if (u.x > home) {
+        u.charging = false;
+        u.x = Math.max(home, u.x - (laneH * 1.0 * dt) / W);
+      } else {
+        u.charging = false;
       }
       // find target
       let target = null, bestX = Infinity;
@@ -1745,9 +1801,13 @@ window.SB = window.SB || {};
         const d = ex - ux;
         if (d < best) { best = d; target = u; }
       }
-      const rangePx = e.ranged ? Math.min(e.ranged * laneH, W * 0.34) : Math.min(laneH * (e.size * 0.62) * BAL.reach, W * 0.18);
+      const rangePx = e.ranged ? Math.min(e.ranged * laneH, W * BAL.enemyRangeCap) : Math.min(laneH * (e.size * 0.62) * BAL.reach, W * 0.18);
+      // v1.3.1: never let a ranged enemy (or anything else) settle out near the
+      // portal / UI edge. Past the engagement line it keeps walking in, so every
+      // fight happens inside the visible middle of the field.
+      const tooFarOut = e.x > BAL.engageMaxX;
       let attacking = false;
-      if (target && best <= rangePx) {
+      if (target && best <= rangePx && !tooFarOut) {
         attacking = true;
         if (e.cd <= 0) {
           e.cd = e.atk;
@@ -1774,7 +1834,9 @@ window.SB = window.SB || {};
         }
       }
       if (!attacking) {
-        e.x -= (e.spd * dt) / W;
+        // v1.3.1: clear the portal area quickly instead of loitering out of frame
+        const rush = e.x > BAL.engageMaxX + 0.04 ? BAL.entryRush : 1;
+        e.x -= (e.spd * rush * dt) / W;
         if (e.boss && e.x < 0.62 && e.roarT > 0) {
           e.roarT -= dt;
           if (e.roarT <= 0) {
@@ -2825,13 +2887,18 @@ window.SB = window.SB || {};
     $('draftReroll').addEventListener('click', rerollDraft);
     ['btnDeckMenu', 'btnDeckPause', 'btnDeckOver', 'btnDeckSlot'].forEach(function (id) {
       const el = $(id);
-      if (el) el.addEventListener('click', function () { if (G.state !== 'playing') openDeck(); });
+      if (el) el.addEventListener('click', function () { openDeck(); });
     });
-    if ($('btnDeckClose')) $('btnDeckClose').addEventListener('click', function () { S.click(); hide('deckOverlay'); });
+    if ($('btnDeckClose')) $('btnDeckClose').addEventListener('click', closeDeck);
     ['btnBolt', 'btnMeteor'].forEach(function (id) {
       const el = $(id);
       if (!el) return;
-      el.addEventListener('click', function () { S.init(); S.resume(); S.click(); castOrdnance(id === 'btnBolt' ? 'bolt' : 'meteor'); });
+      el.addEventListener('click', function () {
+        S.init(); S.resume(); S.click();
+        castOrdnance(id === 'btnBolt' ? 'bolt' : 'meteor');
+        el.classList.remove('tap'); void el.offsetWidth; el.classList.add('tap');
+        setTimeout(function () { el.classList.remove('tap'); }, 420);
+      });
     });
     if ($('btnRevive')) $('btnRevive').addEventListener('click', function () { S.click(); reviveRun(false); });
     if ($('btnReviveVip')) $('btnReviveVip').addEventListener('click', function () { S.click(); reviveRun(true); });
@@ -2854,7 +2921,8 @@ window.SB = window.SB || {};
       } else if (k === 'm') {
         S.setMuted(!S.isMuted()); I.apply();
       } else if (k === 'escape' || k === 'p') {
-        if (G.state === 'playing' || G.state === 'paused') togglePause();
+        if ($('deckOverlay').classList.contains('show')) closeDeck();
+        else if (G.state === 'playing' || G.state === 'paused') togglePause();
       } else if (k === 'q' && G.state === 'playing') {
         castOrdnance('bolt');
       } else if (k === 'e' && G.state === 'playing') {
@@ -2918,6 +2986,20 @@ window.SB = window.SB || {};
         lang: I.getLang(), vip: G.vip, auto: G.auto, stats: JSON.parse(JSON.stringify(G.stats)),
         fx: { parts: G.parts.length, projs: G.projs.length, texts: G.texts.length, beams: G.beams.length }
       };
+    },
+    // v1.3.1 coverage audit: how far (as a fraction of the field) each unit type can
+    // strike from its forward-most allowed position. Everything must clear the
+    // engagement line, so a lane can never park an enemy outside its own reach.
+    reach: function () {
+      const out = { line: BAL.engageMaxX, sortieMax: BAL.sortieMax, leanFront: G.slots[0] + BAL.leanHome, laneH: Math.round(laneH), W: Math.round(W) };
+      Object.keys(UNIT).forEach(function (t) {
+        const d = UNIT[t];
+        if (!d.range) return;
+        const rangePx = Math.min(d.range * laneH, W * 0.52);
+        const fromX = MELEE[t] ? Math.min(BAL.sortieMax, G.slots[0] + (laneH * 3.0) / W) : Math.min(0.60, G.slots[0] + BAL.leanHome);
+        out[t] = +((fromX * W + rangePx) / W).toFixed(3);
+      });
+      return out;
     },
     balance: function () {
       const costs = {};
@@ -3088,8 +3170,8 @@ window.SB = window.SB || {};
       hud();
       return { state: G.state, wave: G.wave };
     },
-    spawnAt: function (type, lane, x) {
-      spawnEnemy({ type: type, lane: lane === undefined ? 1 : lane, t: 0, hpMul: 1, dmgMul: 1, at: x === undefined ? 0.85 : x });
+    spawnAt: function (type, lane, x, hpMul) {
+      spawnEnemy({ type: type, lane: lane === undefined ? 1 : lane, t: 0, hpMul: hpMul || 1, dmgMul: 1, at: x === undefined ? 0.85 : x });
       return G.enemies.length;
     },
     clearUnits: function () { G.units.length = 0; G.pending = []; return 0; },

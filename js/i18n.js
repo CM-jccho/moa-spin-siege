@@ -11,7 +11,7 @@ window.SB = window.SB || {};
   const ko = {
     'app.subtitle': 'SIEGE',
     'app.tagline': '슬롯을 돌려 군단을 소환하라',
-    'app.made': 'Web Audio · 오프라인 플레이 · v1.3',
+    'app.made': 'Web Audio · 오프라인 플레이 · v1.3.1',
 
     'ui.play': '게임 시작', 'ui.howto': '플레이 방법', 'ui.close': '닫기',
     'ui.menu': '메인 메뉴', 'ui.pause': '일시정지', 'ui.resume': '계속',
@@ -83,6 +83,10 @@ window.SB = window.SB || {};
     'quest.reward.bolt': '⚡ 낙뢰 +1', 'quest.reward.meteor': '🔥 메테오 +1',
     'quest.reward.rerollFree': '무료 리롤 +{n}',
     'slot.free': '무료', 'ord.empty': '충전된 특수 아이템이 없습니다',
+    'ord.emptyBolt': '⚡ 낙뢰 충전 0 — 전술 미션을 달성하면 충전됩니다',
+    'ord.emptyMeteor': '🔥 메테오 충전 0 — 전술 미션을 달성하면 충전됩니다',
+    'ord.noTarget': '메테오는 적이 있을 때 쓸 수 있습니다',
+    'ord.starter': '⚡ 낙뢰 1회 · 🔥 메테오 1회 지급 — 지금 바로 눌러 쓰세요',
     'ord.boltTitle': '낙뢰 (Q) — 미션 보상으로 충전', 'ord.meteorTitle': '메테오 (E) — 미션 보상으로 충전',
     'quest.reward.heal': '성벽 +{n}', 'quest.reward.charge': '스핀 +{n}',
     'zone.1': '성문 초소', 'zone.2': '안개 숲', 'zone.3': '화염 협곡', 'zone.4': '암흑 요새', 'zone.5': '최종 성채',
@@ -155,7 +159,7 @@ window.SB = window.SB || {};
   const en = {
     'app.subtitle': 'SIEGE',
     'app.tagline': 'Spin the reels. Summon the legion.',
-    'app.made': 'Web Audio · Offline play · v1.3',
+    'app.made': 'Web Audio · Offline play · v1.3.1',
 
     'ui.play': 'Play now', 'ui.howto': 'How to play', 'ui.close': 'Close',
     'ui.menu': 'Main menu', 'ui.pause': 'Paused', 'ui.resume': 'Resume',
@@ -227,6 +231,10 @@ window.SB = window.SB || {};
     'quest.reward.bolt': '⚡ Lightning +1', 'quest.reward.meteor': '🔥 Meteor +1',
     'quest.reward.rerollFree': 'Free reroll +{n}',
     'slot.free': 'FREE', 'ord.empty': 'No special items charged',
+    'ord.emptyBolt': '⚡ Lightning charges: 0 — clear a tactical mission to charge it',
+    'ord.emptyMeteor': '🔥 Meteor charges: 0 — clear a tactical mission to charge it',
+    'ord.noTarget': 'Meteor needs an enemy on the field',
+    'ord.starter': '⚡ 1 lightning · 🔥 1 meteor granted — press them any time',
     'ord.boltTitle': 'Lightning (Q) — charged by missions', 'ord.meteorTitle': 'Meteor (E) — charged by missions',
     'quest.reward.heal': 'Wall +{n}', 'quest.reward.charge': 'Spin +{n}',
     'zone.1': 'Gate Outpost', 'zone.2': 'Mistwood', 'zone.3': 'Ember Gorge', 'zone.4': 'Dark Keep', 'zone.5': 'Final Citadel',
@@ -299,7 +307,7 @@ window.SB = window.SB || {};
   const zh = {
     'app.subtitle': 'SIEGE',
     'app.tagline': '转动老虎机，召唤你的军团',
-    'app.made': 'Web Audio · 离线可玩 · v1.3',
+    'app.made': 'Web Audio · 离线可玩 · v1.3.1',
 
     'ui.play': '开始游戏', 'ui.howto': '玩法说明', 'ui.close': '关闭',
     'ui.menu': '主菜单', 'ui.pause': '暂停', 'ui.resume': '继续',
@@ -371,6 +379,10 @@ window.SB = window.SB || {};
     'quest.reward.bolt': '⚡ 落雷 +1', 'quest.reward.meteor': '🔥 陨石 +1',
     'quest.reward.rerollFree': '免费重掷 +{n}',
     'slot.free': '免费', 'ord.empty': '没有充能的特殊道具',
+    'ord.emptyBolt': '⚡ 落雷充能 0 — 完成战术任务即可充能',
+    'ord.emptyMeteor': '🔥 陨石充能 0 — 完成战术任务即可充能',
+    'ord.noTarget': '场上没有敌人时无法使用陨石',
+    'ord.starter': '⚡ 落雷 1 次 · 🔥 陨石 1 次 已发放 — 随时点击使用',
     'ord.boltTitle': '落雷（Q）— 通过任务充能', 'ord.meteorTitle': '陨石（E）— 通过任务充能',
     'quest.reward.heal': '城墙 +{n}', 'quest.reward.charge': '旋转 +{n}',
     'zone.1': '城门哨所', 'zone.2': '迷雾森林', 'zone.3': '烈焰峡谷', 'zone.4': '暗黑要塞', 'zone.5': '最终城堡',
@@ -443,7 +455,7 @@ window.SB = window.SB || {};
   const ja = {
     'app.subtitle': 'SIEGE',
     'app.tagline': 'スロットを回して軍団を召喚せよ',
-    'app.made': 'Web Audio · オフライン対応 · v1.3',
+    'app.made': 'Web Audio · オフライン対応 · v1.3.1',
 
     'ui.play': 'ゲーム開始', 'ui.howto': '遊び方', 'ui.close': '閉じる',
     'ui.menu': 'メインメニュー', 'ui.pause': '一時停止', 'ui.resume': '再開',
@@ -515,6 +527,10 @@ window.SB = window.SB || {};
     'quest.reward.bolt': '⚡ 落雷 +1', 'quest.reward.meteor': '🔥 メテオ +1',
     'quest.reward.rerollFree': '無料リロール +{n}',
     'slot.free': '無料', 'ord.empty': 'チャージされた特殊アイテムがありません',
+    'ord.emptyBolt': '⚡ 落雷チャージ 0 — 戦術ミッション達成でチャージされます',
+    'ord.emptyMeteor': '🔥 メテオチャージ 0 — 戦術ミッション達成でチャージされます',
+    'ord.noTarget': 'メテオは敵がいるときのみ使えます',
+    'ord.starter': '⚡ 落雷 1回 · 🔥 メテオ 1回 支給 — いつでも押して使えます',
     'ord.boltTitle': '落雷（Q）— ミッション報酬でチャージ', 'ord.meteorTitle': 'メテオ（E）— ミッション報酬でチャージ',
     'quest.reward.heal': '城壁 +{n}', 'quest.reward.charge': 'スピン +{n}',
     'zone.1': '城門の前哨', 'zone.2': '霧の森', 'zone.3': '炎の峡谷', 'zone.4': '暗黒の砦', 'zone.5': '最終城塞',

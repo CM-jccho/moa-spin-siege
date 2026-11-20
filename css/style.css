@@ -24,6 +24,9 @@
   --r-md:14px;
   --r-sm:10px;
   --font:"Inter","Segoe UI","Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR","Malgun Gothic","WenQuanYi Zen Hei",system-ui,sans-serif;
+  /* v1.3.1: width reserved on the right of the battlefield so the tactical-mission
+     panel can never sit on top of a lane. 0 on phones (the panel is a bottom strip). */
+  --field-gutter:0px;
 }
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -102,7 +105,24 @@ body.muted .ico-sound.off{display:block}
 
 /* ---------------- STAGE ---------------- */
 .stage{position:relative;flex:1 1 auto;min-height:0;overflow:hidden}
-#game{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation}
+#game{position:absolute;inset:0;width:calc(100% - var(--field-gutter));height:100%;display:block;touch-action:manipulation}
+/* the reserved column: a lit side rail the mission panel lives in, and a soft
+   fade over the last strip of the battlefield so the portal glow spills into it */
+.stage::before{
+  content:'';position:absolute;top:0;right:0;bottom:0;z-index:5;pointer-events:none;
+  width:var(--field-gutter);
+  background:
+    radial-gradient(120% 46% at 0% 42%,rgba(150,70,255,.16),rgba(150,70,255,0) 62%),
+    radial-gradient(90% 40% at 0% 88%,rgba(60,230,255,.07),rgba(60,230,255,0) 70%),
+    linear-gradient(180deg,rgba(6,8,18,.55),rgba(4,5,12,.9));
+  border-left:1px solid rgba(124,160,255,.14);
+  box-shadow:inset 14px 0 34px rgba(2,3,8,.55);
+}
+.stage::after{
+  content:'';position:absolute;top:0;bottom:0;z-index:6;pointer-events:none;right:var(--field-gutter);
+  width:64px;
+  background:linear-gradient(90deg,rgba(3,4,10,0) 0,rgba(3,4,10,.30) 34%,rgba(3,4,10,.66) 68%,rgba(3,4,10,.9) 100%);
+}
 .stage-vignette{
   position:absolute;inset:0;pointer-events:none;
   background:radial-gradient(120% 100% at 50% 45%, transparent 45%, rgba(2,3,8,.55) 100%);
@@ -799,16 +819,52 @@ body.frenzy #feverFill{background:linear-gradient(90deg,#ffd166,#ff3ea5)}
 .ord-btn i{font-style:normal;font-size:13px;filter:drop-shadow(0 0 6px rgba(159,232,255,.45))}
 .ord-btn b{font-size:11.5px;color:#dff2ff;font-variant-numeric:tabular-nums}
 .ord-btn:active{transform:scale(.95)}
-.ord-btn:not(:disabled){border-color:rgba(159,232,255,.5);box-shadow:0 0 16px rgba(80,200,255,.18)}
+.ord-btn:not(.empty){border-color:rgba(159,232,255,.5);box-shadow:0 0 16px rgba(80,200,255,.18)}
+.ord-btn.empty{opacity:.55;filter:grayscale(.45);border-color:rgba(124,160,255,.16)}
+.ord-btn.empty b{color:#93a3c6}
 .ord-btn:disabled{opacity:.34;filter:grayscale(.6)}
+.ord-btn.tap{animation:ordTap .32s ease}
+@keyframes ordTap{0%{transform:scale(1)}40%{transform:scale(.92)}100%{transform:scale(1)}}
+.ord-btn.empty.tap{animation:ordShake .34s ease}
+@keyframes ordShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
 
 /* v1.3 · mobile overrides (kept last so they win the cascade) */
 @media (max-width:760px){
   .slot-foot{display:none}
   .ord-bar{flex-direction:row;width:88px;height:54px;gap:5px}
-  .ord-btn{flex-direction:row;gap:3px;font-size:11px;padding:2px}
+  .ord-btn{flex-direction:row;gap:3px;font-size:11px;padding:2px;min-width:40px}
   .ord-btn i{font-size:12px}
 }
 @media (max-width:430px){
-  .ord-bar{width:74px}
+  .ord-bar{width:86px}
+  .side-btns{width:132px}
+}
+@media (max-width:360px){
+  .ord-bar{width:80px}
+  .side-btns{width:120px}
+  .ord-btn{min-width:36px}
+}
+
+/* ---------- v1.3.1 · battlefield rail ----------
+   The tactical-mission panel gets a reserved column on the right instead of
+   floating over lane 1. The canvas stops at the rail, so no unit, enemy,
+   projectile or damage number can ever be drawn under it. */
+@media (min-width:761px){
+  :root{--field-gutter:226px}
+}
+@media (min-width:981px){
+  :root{--field-gutter:260px}
+}
+@media (max-width:760px){
+  .stage::after{background:linear-gradient(90deg,rgba(3,4,10,0),rgba(3,4,10,.5) 72%);width:30px}
+  .stage::before{display:none}
+}
+
+/* ---------- v1.3.1 · boss bar lives in the rail too ----------
+   It used to float over the middle of lane 1; on desktop it now sits at the
+   bottom of the mission rail, so the boss fight is never hidden by UI. */
+@media (min-width:761px){
+  .boss-hud{left:auto;right:14px;bottom:16px;top:auto;transform:none;width:232px}
+  .boss-name{justify-content:flex-start;gap:6px}
+  .boss-bar{height:8px}
 }
