@@ -11,7 +11,7 @@ window.SB = window.SB || {};
   const ko = {
     'app.subtitle': 'SIEGE',
     'app.tagline': '슬롯을 돌려 군단을 소환하라',
-    'app.made': 'Web Audio · 오프라인 플레이 · v1.0',
+    'app.made': 'Web Audio · 오프라인 플레이 · v1.2',
 
     'ui.play': '게임 시작', 'ui.howto': '플레이 방법', 'ui.close': '닫기',
     'ui.menu': '메인 메뉴', 'ui.pause': '일시정지', 'ui.resume': '계속',
@@ -30,6 +30,14 @@ window.SB = window.SB || {};
     'slot.hintHold': '릴을 눌러 홀드할 수 있어요',
     'slot.hintMerge': '같은 유닛이 같은 라인에 오면 승급!',
     'slot.holdLimit': '릴은 최대 2개까지 고정됩니다', 'slot.autoOn': '자동 스핀 켜짐',
+    'slot.combo2': '2X!', 'slot.combo3': '3 MATCH!', 'crit.label': 'CRIT!',
+
+    'guide.title': '이렇게 하면 돼요',
+    'guide.s1': '① 스핀을 눌러 병사 소환',
+    'guide.s2': '② 같은 병사는 자동으로 합체·승급',
+    'guide.s3': '③ 릴을 눌러 결과 고정(HOLD)',
+    'guide.footer': '릴 1·2·3 = 위에서부터 라인 1·2·3',
+    'lane.n1': '라인 1 (맨 위)', 'lane.n2': '라인 2 (가운데)', 'lane.n3': '라인 3 (맨 아래)',
 
     'rarity.common': '일반', 'rarity.rare': '희귀', 'rarity.epic': '영웅', 'rarity.legendary': '전설',
     'tier.1': '병사', 'tier.2': '정예', 'tier.3': '영웅', 'tier.4': '전설',
@@ -67,11 +75,18 @@ window.SB = window.SB || {};
     'relic.bounty': '현상금 목록', 'relic.bounty.d': '적 처치 시 골드 +2',
     'relic.holy': '성검의 각성', 'relic.holy.d': '모든 유닛 공격력·체력 +35%, 황금 오라',
 
-    'quest.title': '퀘스트',
+    'quest.title': '실시간 미션',
     'quest.q1': '스핀 {n}회 돌리기', 'quest.q2': '유닛 {n}회 승급',
     'quest.q3': '웨이브 {n} 클리어', 'quest.q4': '적 {n}명 처치',
     'quest.q5': '잭팟 {n}회 터뜨리기', 'quest.q6': '영웅 등급 유닛 만들기',
     'quest.q7': '보스 {n}마리 처치', 'quest.q8': '골드 {n} 모으기',
+    'quest.q9': '리롤 후 2매치 달성', 'quest.q10': '원거리 적 {n}기 처치',
+    'quest.q11': '성벽 피해 없이 웨이브 {n}회 클리어',
+    'quest.reward.heal': '성벽 +{n}', 'quest.reward.charge': '스핀 +{n}',
+    'zone.1': '성문 초소', 'zone.2': '안개 숲', 'zone.3': '화염 협곡', 'zone.4': '암흑 요새', 'zone.5': '최종 성채',
+    'zone.desc.1': '성문을 지켜라', 'zone.desc.2': '안개 속의 궁수들', 'zone.desc.3': '불길이 몰려온다',
+    'zone.desc.4': '어둠의 군단', 'zone.desc.5': '최후의 성채', 'zone.map': '전장 진행',
+    'slot.needGold': '골드가 부족합니다',
     'quest.reward.reroll': '리롤 +{n}', 'quest.done': '완료',
 
     'gameover.kicker': 'DEFEAT', 'gameover.title': '성벽이 무너졌다',
@@ -84,7 +99,7 @@ window.SB = window.SB || {};
     'stat.hp': '성벽', 'stat.units': '유닛',
 
     'howto.title': '플레이 방법',
-    'howto.s1t': '스핀', 'howto.s1d': '스핀으로 릴을 돌려 유닛을 소환합니다. 릴 하나가 라인 하나를 채웁니다.',
+    'howto.s1t': '스핀', 'howto.s1d': '스핀으로 릴을 돌려 유닛을 소환합니다. 릴 1·2·3은 위에서부터 라인 1·2·3을 채웁니다.',
     'howto.s2t': '매치', 'howto.s2d': '같은 심볼 2개는 보너스, 3개는 잭팟! 잭팟은 2단계 유닛 3기를 소환합니다.',
     'howto.s3t': '승급', 'howto.s3d': '같은 라인에 같은 유닛이 다시 나오면 합쳐져 승급합니다. 승급할수록 더 크고 강해집니다.',
     'howto.s4t': '홀드 / 리롤', 'howto.s4d': '릴을 눌러 홀드하고, 리롤 토큰으로 결과를 다시 돌립니다.',
@@ -100,18 +115,18 @@ window.SB = window.SB || {};
     'vip.unlocked': 'VIP 해금됨', 'vip.relicToast': '성검의 각성이 깨어났습니다',
 
     'toast.promo': '승급! {tier} {unit}', 'toast.relic': '유물 획득: {name}',
-    'toast.quest': '퀘스트 완료! {reward}', 'toast.fever': '피버 타임!',
+    'toast.quest': '미션 완료! {reward}', 'toast.fever': '피버 타임!',
     'toast.feverEnd': '피버 종료', 'toast.boss': '보스 접근 중',
     'toast.laneFull': '라인이 가득 찼습니다', 'toast.vip': 'VIP 스타터 팩이 해금되었습니다',
     'toast.newBest': '신기록!', 'toast.bossDown': '보스 처치 +{n}G',
 
-    'footer.hint': 'SPACE: 스핀 · 1/2/3: 홀드 · M: 음소거'
+    'footer.hint': 'SPACE: 스핀 · 1/2/3: 홀드 · M: 음소거 · 릴 1·2·3 = 라인 1·2·3'
   };
 
   const en = {
     'app.subtitle': 'SIEGE',
     'app.tagline': 'Spin the reels. Summon the legion.',
-    'app.made': 'Web Audio · Offline play · v1.0',
+    'app.made': 'Web Audio · Offline play · v1.2',
 
     'ui.play': 'Play now', 'ui.howto': 'How to play', 'ui.close': 'Close',
     'ui.menu': 'Main menu', 'ui.pause': 'Paused', 'ui.resume': 'Resume',
@@ -130,6 +145,14 @@ window.SB = window.SB || {};
     'slot.hintHold': 'Tap a reel to hold it',
     'slot.hintMerge': 'Two identical units on one lane promote!',
     'slot.holdLimit': 'You can hold up to 2 reels', 'slot.autoOn': 'Auto spin on',
+    'slot.combo2': '2X!', 'slot.combo3': '3 MATCH!', 'crit.label': 'CRIT!',
+
+    'guide.title': 'How it works',
+    'guide.s1': '① Tap Spin to summon soldiers',
+    'guide.s2': '② Duplicates merge and promote on their own',
+    'guide.s3': '③ Tap a reel to hold that symbol',
+    'guide.footer': 'Reels 1·2·3 = lanes 1·2·3 from the top',
+    'lane.n1': 'Lane 1 (top)', 'lane.n2': 'Lane 2 (middle)', 'lane.n3': 'Lane 3 (bottom)',
 
     'rarity.common': 'Common', 'rarity.rare': 'Rare', 'rarity.epic': 'Epic', 'rarity.legendary': 'Legendary',
     'tier.1': 'Soldier', 'tier.2': 'Elite', 'tier.3': 'Hero', 'tier.4': 'Legend',
@@ -167,11 +190,18 @@ window.SB = window.SB || {};
     'relic.bounty': 'Bounty Ledger', 'relic.bounty.d': '+2 gold per enemy killed',
     'relic.holy': 'Awakening of the Holy Blade', 'relic.holy.d': 'All units +35% ATK & HP, golden aura',
 
-    'quest.title': 'Quests',
+    'quest.title': 'Live missions',
     'quest.q1': 'Spin {n} times', 'quest.q2': 'Promote units {n} times',
     'quest.q3': 'Clear {n} waves', 'quest.q4': 'Defeat {n} enemies',
     'quest.q5': 'Hit the jackpot {n} time', 'quest.q6': 'Forge a Hero-tier unit',
     'quest.q7': 'Defeat {n} boss', 'quest.q8': 'Collect {n} gold',
+    'quest.q9': 'Land a 2+ match right after a reroll', 'quest.q10': 'Defeat {n} ranged enemies',
+    'quest.q11': 'Clear {n} wave with no wall damage',
+    'quest.reward.heal': 'Wall +{n}', 'quest.reward.charge': 'Spin +{n}',
+    'zone.1': 'Gate Outpost', 'zone.2': 'Mistwood', 'zone.3': 'Ember Gorge', 'zone.4': 'Dark Keep', 'zone.5': 'Final Citadel',
+    'zone.desc.1': 'Hold the gate', 'zone.desc.2': 'Archers in the mist', 'zone.desc.3': 'The gorge burns',
+    'zone.desc.4': 'Legion of the dark', 'zone.desc.5': 'The last citadel', 'zone.map': 'Campaign',
+    'slot.needGold': 'Not enough gold',
     'quest.reward.reroll': 'Reroll +{n}', 'quest.done': 'Done',
 
     'gameover.kicker': 'DEFEAT', 'gameover.title': 'The wall has fallen',
@@ -184,7 +214,7 @@ window.SB = window.SB || {};
     'stat.hp': 'Castle', 'stat.units': 'Units',
 
     'howto.title': 'How to play',
-    'howto.s1t': 'Spin', 'howto.s1d': 'Spin the reels to summon units. Each reel feeds one lane.',
+    'howto.s1t': 'Spin', 'howto.s1d': 'Spin the reels to summon units. Reels 1·2·3 feed lanes 1·2·3 from the top.',
     'howto.s2t': 'Match', 'howto.s2d': 'Two matching symbols give a bonus; three trigger a jackpot — three tier-2 units.',
     'howto.s3t': 'Promote', 'howto.s3d': 'A duplicate unit on the same lane merges into a stronger, bigger hero.',
     'howto.s4t': 'Hold / reroll', 'howto.s4d': 'Tap a reel to hold it. Spend reroll tokens to spin that result again.',
@@ -200,18 +230,18 @@ window.SB = window.SB || {};
     'vip.unlocked': 'VIP unlocked', 'vip.relicToast': 'The Holy Blade awakens',
 
     'toast.promo': 'Promoted! {tier} {unit}', 'toast.relic': 'Relic acquired: {name}',
-    'toast.quest': 'Quest complete! {reward}', 'toast.fever': 'Fever time!',
+    'toast.quest': 'Mission complete! {reward}', 'toast.fever': 'Fever time!',
     'toast.feverEnd': 'Fever over', 'toast.boss': 'Boss approaching',
     'toast.laneFull': 'Lane is full', 'toast.vip': 'VIP Starter Pack unlocked',
     'toast.newBest': 'New record!', 'toast.bossDown': 'Boss slain +{n}G',
 
-    'footer.hint': 'SPACE: spin · 1/2/3: hold · M: mute'
+    'footer.hint': 'SPACE: spin · 1/2/3: hold · M: mute · reels 1·2·3 = lanes 1·2·3'
   };
 
   const zh = {
     'app.subtitle': 'SIEGE',
     'app.tagline': '转动老虎机，召唤你的军团',
-    'app.made': 'Web Audio · 离线可玩 · v1.0',
+    'app.made': 'Web Audio · 离线可玩 · v1.2',
 
     'ui.play': '开始游戏', 'ui.howto': '玩法说明', 'ui.close': '关闭',
     'ui.menu': '主菜单', 'ui.pause': '暂停', 'ui.resume': '继续',
@@ -230,6 +260,14 @@ window.SB = window.SB || {};
     'slot.hintHold': '点击转轮可锁定该符号',
     'slot.hintMerge': '同一路上出现相同单位即可晋升！',
     'slot.holdLimit': '最多锁定 2 个转轮', 'slot.autoOn': '自动旋转已开启',
+    'slot.combo2': '2X!', 'slot.combo3': '3 MATCH!', 'crit.label': 'CRIT!',
+
+    'guide.title': '这样玩',
+    'guide.s1': '① 点击旋转召唤士兵',
+    'guide.s2': '② 相同士兵会自动合并·晋升',
+    'guide.s3': '③ 点击转轮锁定该符号（HOLD）',
+    'guide.footer': '转轮 1·2·3 = 从上到下第 1·2·3 路',
+    'lane.n1': '第 1 路（上）', 'lane.n2': '第 2 路（中）', 'lane.n3': '第 3 路（下）',
 
     'rarity.common': '普通', 'rarity.rare': '稀有', 'rarity.epic': '史诗', 'rarity.legendary': '传说',
     'tier.1': '士兵', 'tier.2': '精英', 'tier.3': '英雄', 'tier.4': '传说',
@@ -267,11 +305,18 @@ window.SB = window.SB || {};
     'relic.bounty': '悬赏名录', 'relic.bounty.d': '每次击杀 +2 金币',
     'relic.holy': '圣剑觉醒', 'relic.holy.d': '所有单位攻击力·生命 +35%，金色光环',
 
-    'quest.title': '任务',
+    'quest.title': '实时任务',
     'quest.q1': '旋转 {n} 次', 'quest.q2': '晋升单位 {n} 次',
     'quest.q3': '通关 {n} 波', 'quest.q4': '击败 {n} 名敌人',
     'quest.q5': '触发 {n} 次头奖', 'quest.q6': '合成英雄级单位',
     'quest.q7': '击败 {n} 只首领', 'quest.q8': '收集 {n} 金币',
+    'quest.q9': '重掷后达成 2 连匹配', 'quest.q10': '击败 {n} 名远程敌人',
+    'quest.q11': '不受城墙伤害通关 {n} 波',
+    'quest.reward.heal': '城墙 +{n}', 'quest.reward.charge': '旋转 +{n}',
+    'zone.1': '城门哨所', 'zone.2': '迷雾森林', 'zone.3': '烈焰峡谷', 'zone.4': '暗黑要塞', 'zone.5': '最终城堡',
+    'zone.desc.1': '守住城门', 'zone.desc.2': '雾中的弓手', 'zone.desc.3': '烈焰袭来',
+    'zone.desc.4': '黑暗军团', 'zone.desc.5': '最后的城堡', 'zone.map': '战场进度',
+    'slot.needGold': '金币不足',
     'quest.reward.reroll': '重掷 +{n}', 'quest.done': '完成',
 
     'gameover.kicker': 'DEFEAT', 'gameover.title': '城墙崩塌了',
@@ -284,7 +329,7 @@ window.SB = window.SB || {};
     'stat.hp': '城墙', 'stat.units': '单位',
 
     'howto.title': '玩法说明',
-    'howto.s1t': '旋转', 'howto.s1d': '旋转转轮召唤单位，每个转轮对应一条路。',
+    'howto.s1t': '旋转', 'howto.s1d': '旋转转轮召唤单位，转轮 1·2·3 对应从上到下第 1·2·3 路。',
     'howto.s2t': '匹配', 'howto.s2d': '两个相同符号获得加成，三个触发头奖——召唤 3 个二阶单位。',
     'howto.s3t': '晋升', 'howto.s3d': '同一路上出现相同单位会合并，变得更大更强。',
     'howto.s4t': '锁定 / 重掷', 'howto.s4d': '点击转轮锁定符号，消耗重掷币重新旋转。',
@@ -305,13 +350,13 @@ window.SB = window.SB || {};
     'toast.laneFull': '该路已满', 'toast.vip': 'VIP 新手礼包已解锁',
     'toast.newBest': '新纪录！', 'toast.bossDown': '首领击破 +{n}G',
 
-    'footer.hint': '空格：旋转 · 1/2/3：锁定 · M：静音'
+    'footer.hint': '空格：旋转 · 1/2/3：锁定 · M：静音 · 转轮 1·2·3 = 第 1·2·3 路'
   };
 
   const ja = {
     'app.subtitle': 'SIEGE',
     'app.tagline': 'スロットを回して軍団を召喚せよ',
-    'app.made': 'Web Audio · オフライン対応 · v1.0',
+    'app.made': 'Web Audio · オフライン対応 · v1.2',
 
     'ui.play': 'ゲーム開始', 'ui.howto': '遊び方', 'ui.close': '閉じる',
     'ui.menu': 'メインメニュー', 'ui.pause': '一時停止', 'ui.resume': '再開',
@@ -330,6 +375,14 @@ window.SB = window.SB || {};
     'slot.hintHold': 'リールをタップで固定できます',
     'slot.hintMerge': '同じレーンに同じユニットで昇級！',
     'slot.holdLimit': '固定できるのは最大2リール', 'slot.autoOn': 'オートスピンON',
+    'slot.combo2': '2X!', 'slot.combo3': '3 MATCH!', 'crit.label': 'CRIT!',
+
+    'guide.title': 'はじめに',
+    'guide.s1': '① スピンで兵士を召喚',
+    'guide.s2': '② 同じ兵士は自動で合体・昇級',
+    'guide.s3': '③ リールをタップで固定（HOLD）',
+    'guide.footer': 'リール1·2·3 = 上からレーン1·2·3',
+    'lane.n1': 'レーン1（上）', 'lane.n2': 'レーン2（中）', 'lane.n3': 'レーン3（下）',
 
     'rarity.common': 'ノーマル', 'rarity.rare': 'レア', 'rarity.epic': 'エピック', 'rarity.legendary': '伝説',
     'tier.1': '兵士', 'tier.2': '精鋭', 'tier.3': '英雄', 'tier.4': '伝説',
@@ -367,11 +420,18 @@ window.SB = window.SB || {};
     'relic.bounty': '賞金台帳', 'relic.bounty.d': '敵撃破ごとにゴールド +2',
     'relic.holy': '聖剣の覚醒', 'relic.holy.d': '全ユニットの攻撃力・HP +35%、黄金のオーラ',
 
-    'quest.title': 'クエスト',
+    'quest.title': 'リアルタイムミッション',
     'quest.q1': 'スピン {n} 回', 'quest.q2': 'ユニットを {n} 回昇級',
     'quest.q3': '{n} ウェーブクリア', 'quest.q4': '敵を {n} 体倒す',
     'quest.q5': 'ジャックポット {n} 回', 'quest.q6': '英雄級ユニットを生成',
     'quest.q7': 'ボスを {n} 体倒す', 'quest.q8': 'ゴールドを {n} 貯める',
+    'quest.q9': 'リロール後に2マッチ以上を達成', 'quest.q10': '遠距離の敵を {n} 体倒す',
+    'quest.q11': '城壁ダメージなしで {n} ウェーブクリア',
+    'quest.reward.heal': '城壁 +{n}', 'quest.reward.charge': 'スピン +{n}',
+    'zone.1': '城門の前哨', 'zone.2': '霧の森', 'zone.3': '炎の峡谷', 'zone.4': '暗黒の砦', 'zone.5': '最終城塞',
+    'zone.desc.1': '城門を守れ', 'zone.desc.2': '霧の射手たち', 'zone.desc.3': '炎が迫る',
+    'zone.desc.4': '闇の軍団', 'zone.desc.5': '最後の城塞', 'zone.map': '戦場進行',
+    'slot.needGold': 'ゴールドが足りません',
     'quest.reward.reroll': 'リロール +{n}', 'quest.done': '達成',
 
     'gameover.kicker': 'DEFEAT', 'gameover.title': '城壁が崩れた',
@@ -384,7 +444,7 @@ window.SB = window.SB || {};
     'stat.hp': '城壁', 'stat.units': 'ユニット',
 
     'howto.title': '遊び方',
-    'howto.s1t': 'スピン', 'howto.s1d': 'スピンでリールを回してユニットを召喚。リール1つがレーン1つに対応。',
+    'howto.s1t': 'スピン', 'howto.s1d': 'スピンでリールを回してユニットを召喚。リール1·2·3は上からレーン1·2·3に対応。',
     'howto.s2t': 'マッチ', 'howto.s2d': '同じシンボル2つでボーナス、3つでジャックポット！ 2段階ユニット3体を召喚。',
     'howto.s3t': '昇級', 'howto.s3d': '同じレーンに同じユニットが出ると合体し、大きく強くなる。',
     'howto.s4t': 'ホールド / リロール', 'howto.s4d': 'リールをタップで固定。リロールトークンで結果を引き直せる。',
@@ -400,12 +460,12 @@ window.SB = window.SB || {};
     'vip.unlocked': 'VIP解放済み', 'vip.relicToast': '聖剣が目覚めた',
 
     'toast.promo': '昇級！ {tier} {unit}', 'toast.relic': '遺物獲得：{name}',
-    'toast.quest': 'クエスト達成！ {reward}', 'toast.fever': 'フィーバータイム！',
+    'toast.quest': 'ミッション達成！ {reward}', 'toast.fever': 'フィーバータイム！',
     'toast.feverEnd': 'フィーバー終了', 'toast.boss': 'ボス接近中',
     'toast.laneFull': 'レーンが満杯です', 'toast.vip': 'VIPスターターパックを解放しました',
     'toast.newBest': '新記録！', 'toast.bossDown': 'ボス撃破 +{n}G',
 
-    'footer.hint': 'SPACE: スピン · 1/2/3: 固定 · M: ミュート'
+    'footer.hint': 'SPACE: スピン · 1/2/3: 固定 · M: ミュート · リール1·2·3 = レーン1·2·3'
   };
 
   const DICT = { ko, en, zh, ja };

@@ -117,6 +117,7 @@ window.SB = window.SB || {};
     merge: function (tier) {
       if (!ctx) return;
       const base = 420 + (tier || 1) * 40;
+      tone({ f: 96, f2: 52, type: 'sine', dur: 0.24, v: 0.22 });
       [1, 1.26, 1.5, 2].forEach(function (m, i) {
         tone({ f: base * m, type: 'triangle', dur: 0.20, v: 0.14, delay: i * 0.05 });
       });
@@ -125,6 +126,8 @@ window.SB = window.SB || {};
 
     jackpot: function () {
       if (!ctx) return;
+      tone({ f: 110, f2: 44, type: 'sine', dur: 0.7, v: 0.26 });
+      noise({ fc: 500, fc2: 80, filter: 'lowpass', dur: 0.5, v: 0.16 });
       const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5, 1567.98];
       notes.forEach(function (f, i) {
         tone({ f: f, type: 'triangle', dur: 0.42, v: 0.17, delay: i * 0.075 });
@@ -138,15 +141,47 @@ window.SB = window.SB || {};
 
     coin: function () {
       if (!ctx || !throttle('coin', 60)) return;
+      noise({ fc: 5200, fc2: 2400, dur: 0.03, v: 0.05, q: 1.2 });
       tone({ f: 1180, type: 'square', dur: 0.05, v: 0.07 });
       tone({ f: 1560, type: 'square', dur: 0.08, v: 0.06, delay: 0.045 });
+      tone({ f: 2340, type: 'sine', dur: 0.10, v: 0.035, delay: 0.08 });
     },
 
     hit: function (crit) {
-      if (!ctx || !throttle('hit', 32)) return;
-      noise({ fc: crit ? 3200 : 2100, fc2: 500, dur: crit ? 0.14 : 0.08, v: crit ? 0.20 : 0.11, q: 0.8 });
-      tone({ f: crit ? 220 : 160, f2: 60, type: 'sine', dur: 0.09, v: 0.13 });
-      if (crit) tone({ f: 900, f2: 300, type: 'sawtooth', dur: 0.10, v: 0.06 });
+      if (!ctx || !throttle('hit', 28)) return;
+      // sharp transient first, then the body of the impact
+      noise({ fc: crit ? 5200 : 3600, fc2: 900, dur: crit ? 0.06 : 0.04, v: crit ? 0.16 : 0.085, q: 0.7 });
+      noise({ fc: crit ? 1200 : 900, fc2: 120, filter: 'lowpass', dur: crit ? 0.20 : 0.12, v: crit ? 0.26 : 0.17 });
+      tone({ f: crit ? 180 : 150, f2: 46, type: 'sine', dur: crit ? 0.16 : 0.10, v: crit ? 0.26 : 0.16 });
+      if (crit) {
+        tone({ f: 1180, f2: 420, type: 'square', dur: 0.09, v: 0.065 });
+        tone({ f: 72, f2: 40, type: 'sine', dur: 0.22, v: 0.16 });
+      }
+    },
+
+    critHit: function () {
+      if (!ctx || !throttle('crit', 60)) return;
+      tone({ f: 2400, f2: 900, type: 'triangle', dur: 0.12, v: 0.085 });
+      noise({ fc: 7000, fc2: 2200, dur: 0.14, v: 0.10, q: 1.4 });
+    },
+
+    slam: function () {
+      if (!ctx || !throttle('slam', 90)) return;
+      noise({ fc: 700, fc2: 60, filter: 'lowpass', dur: 0.34, v: 0.30 });
+      tone({ f: 120, f2: 34, type: 'sine', dur: 0.30, v: 0.30 });
+      tone({ f: 60, f2: 28, type: 'square', dur: 0.22, v: 0.11, filter: 'lowpass', fc: 200 });
+    },
+
+    combo: function (n) {
+      if (!ctx) return;
+      const base = n >= 3 ? 523.25 : 392;
+      [1, 1.25, 1.5].forEach(function (m, i) {
+        tone({ f: base * m, type: 'square', dur: 0.10, v: 0.055, delay: i * 0.045 });
+      });
+      if (n >= 3) {
+        tone({ f: 98, f2: 48, type: 'sine', dur: 0.5, v: 0.24 });
+        noise({ fc: 9000, fc2: 2600, dur: 0.42, v: 0.10 });
+      }
     },
 
     arrow: function () {
@@ -174,7 +209,10 @@ window.SB = window.SB || {};
 
     promote: function () {
       if (!ctx) return;
+      tone({ f: 90, f2: 46, type: 'sine', dur: 0.40, v: 0.24 });
       [523, 659, 880].forEach(function (f, i) { tone({ f: f, type: 'sine', dur: 0.35, v: 0.15, delay: i * 0.06 }); });
+      tone({ f: 1760, f2: 3520, type: 'triangle', dur: 0.22, v: 0.06, delay: 0.02 });
+      noise({ fc: 6800, fc2: 1800, dur: 0.30, v: 0.07 });
     },
 
     waveClear: function () {

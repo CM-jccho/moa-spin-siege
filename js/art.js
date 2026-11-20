@@ -829,8 +829,31 @@ window.SB = window.SB || {};
     cache[key] = c; return c;
   }
 
-  function iconDataURL(type, tier) {
-    const key = 'i_' + type + '_' + (tier || 1);
+  /* white silhouette used for the hit-flash overlay */
+  function whiteVersion(src) {
+    const c = document.createElement('canvas');
+    c.width = src.width; c.height = src.height;
+    const x = c.getContext('2d');
+    x.drawImage(src, 0, 0);
+    x.globalCompositeOperation = 'source-atop';
+    x.fillStyle = '#ffffff';
+    x.fillRect(0, 0, c.width, c.height);
+    return c;
+  }
+
+  function unitFlash(type, tier) {
+    const key = 'uf_' + type + '_' + (tier || 1);
+    if (!cache[key]) cache[key] = whiteVersion(unitSprite(type, tier || 1));
+    return cache[key];
+  }
+
+  function enemyFlash(type) {
+    const key = 'ef_' + type;
+    if (!cache[key]) cache[key] = whiteVersion(enemySprite(type));
+    return cache[key];
+  }
+
+  function iconDataURL(type, tier) {    const key = 'i_' + type + '_' + (tier || 1);
     if (cache[key]) return cache[key];
     const s = unitSprite(type, tier || 1);
     const c = document.createElement('canvas');
@@ -868,6 +891,8 @@ window.SB = window.SB || {};
   SB.Art = {
     unit: unitSprite,
     enemy: enemySprite,
+    unitFlash: unitFlash,
+    enemyFlash: enemyFlash,
     icon: iconDataURL,
     relic: relicIcon,
     hexA: hexA,

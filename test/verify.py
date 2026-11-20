@@ -198,6 +198,101 @@ def run_desktop(p, errors):
     pg.wait_for_timeout(2200)
     check("boss bar appears on wave 5", pg.evaluate("!document.getElementById('bossHud').hidden"))
 
+    # --- ranged enemy counterplay (v1.1: melee sortie + longer ranged reach) ---
+    pg.evaluate("SB.debug.arena(); SB.debug.summon('spear', 1, 1, 0); SB.debug.spawnAt('skeleton', 1, 0.86)")
+    pg.wait_for_timeout(900)
+    charged = pg.evaluate("SB.debug.unitPos()")
+    check("melee unit steps out of its slot toward a ranged enemy",
+          bool(charged) and charged[0]["x"] > 0.49, charged)
+    hit = False
+    sk = []
+    for _ in range(14):
+        pg.wait_for_timeout(500)
+        st = pg.evaluate("SB.debug.state()")
+        sk = [e for e in st["enemies"] if e["t"] == "skeleton"]
+        if not sk or sk[0]["hp"] < 80:
+            hit = True
+        if not sk:
+            break
+    check("melee-only lane reaches and kills a skeleton archer", hit and not sk, sk)
+    xs = [u["x"] for u in pg.evaluate("SB.debug.unitPos()")]
+    check("charging units stay on the battlefield", all(0.05 <= x <= 0.92 for x in xs), xs)
+
+    pg.evaluate("SB.debug.arena(); SB.debug.summon('archer', 1, 1, 0); SB.debug.spawnAt('skeleton', 1, 0.90)")
+    ranged_hit = False
+    sk2 = []
+    for _ in range(18):
+        pg.wait_for_timeout(500)
+        st = pg.evaluate("SB.debug.state()")
+        sk2 = [e for e in st["enemies"] if e["t"] == "skeleton"]
+        if not sk2 or sk2[0]["hp"] < 80:
+            ranged_hit = True
+        if not sk2:
+            break
+    check("archer lane reaches a skeleton at its standoff distance", ranged_hit and not sk2, sk2)
+
+    pg.evaluate("SB.debug.arena(); SB.debug.summon('spear', 1, 1, 0); SB.debug.spawnAt('goblin', 1, 0.62)")
+    pg.wait_for_timeout(3500)
+    home = pg.evaluate("SB.debug.unitPos()")
+    check("melee unit walks back to its slot after the lane clears",
+          bool(home) and abs(home[0]["x"] - 0.465) < 0.02, home)
+
+    # --- gold reroll economy ---
+    pg.evaluate("SB.debug.setGold(200)")
+    pg.wait_for_timeout(120)
+    price = pg.inner_text("#rerollCost")
+    check("reroll shows its gold price", price.endswith("G"), price)
+    pg.evaluate("document.getElementById('rerollBtn').click()")
+    pg.wait_for_timeout(220)
+    st = pg.evaluate("SB.debug.state()")
+    check("reroll spends gold and raises the next price", st["gold"] <= 190 and st["rerollCost"] == 15, (st["gold"], st["rerollCost"]))
+    check("next reroll price is on the button", pg.inner_text("#rerollCost") == "15G", pg.inner_text("#rerollCost"))
+    pg.evaluate("SB.debug.setGold(5)")
+    pg.wait_for_timeout(160)
+    check("reroll is disabled when gold is short",
+          pg.evaluate("document.getElementById('rerollBtn').disabled") and
+          "poor" in pg.evaluate("document.getElementById('rerollBtn').className"))
+    pg.evaluate("SB.debug.spawnWave(2)")
+    pg.wait_for_timeout(260)
+    check("reroll price resets on the next wave", pg.evaluate("SB.debug.state()['rerollCost']") == 10, pg.inner_text("#rerollCost"))
+
+    # --- campaign map / zones ---
+    pg.evaluate("SB.debug.spawnWave(1)")
+    pg.wait_for_timeout(420)
+    z1 = pg.evaluate("SB.debug.state()['zone']")
+    label1 = pg.inner_text("#cmpLabel")
+    dots = pg.evaluate("document.querySelectorAll('#cmpTrack .cmp-dot').length")
+    check("campaign map shows 5 zone nodes", dots == 5, dots)
+    check("fresh run starts in zone 1", z1 == 0 and bool(label1.strip()), (z1, label1))
+    pg.evaluate("SB.debug.spawnWave(6)")
+    pg.wait_for_timeout(420)
+    z2 = pg.evaluate("SB.debug.state()['zone']")
+    label2 = pg.inner_text("#cmpLabel")
+    on_nodes = pg.evaluate("document.querySelectorAll('#cmpTrack .cmp-dot.on').length")
+    check("wave 6 moves the campaign marker to zone 2", z2 == 1 and label2 != label1 and on_nodes == 1, (z2, label1, label2))
+    pg.click("#btnPause")
+    pg.wait_for_timeout(260)
+    rows = pg.evaluate("document.querySelectorAll('#pauseMap li').length")
+    on_row = pg.evaluate("document.querySelectorAll('#pauseMap li.on').length")
+    check("pause panel lists the 5-zone campaign map", rows == 5 and on_row == 1, (rows, on_row))
+    pg.click("#btnResume")
+    pg.wait_for_timeout(260)
+
+    # --- live missions with instant rewards ---
+    pg.evaluate("document.getElementById('toastLayer').innerHTML = ''; SB.debug.setGold(120)")
+    pg.wait_for_timeout(140)
+    q0 = pg.evaluate("SB.debug.state()['quests'][0]")
+    g0 = pg.evaluate("SB.debug.state()['gold']")
+    pg.evaluate("SB.debug.progress('%s', %d)" % (q0["stat"], q0["target"]))
+    pg.wait_for_timeout(340)
+    st = pg.evaluate("SB.debug.state()")
+    ids = [q["id"] for q in st["quests"]]
+    toast_txt = pg.evaluate("document.getElementById('toastLayer').innerText")
+    check("mission completes and rotates to a new one", q0["id"] not in ids, (q0["id"], ids))
+    check("mission pays its reward instantly", st["gold"] > g0 or "성벽" in q0["reward"] or "Wall" in q0["reward"] or "SPIN" in q0["reward"] or "스핀" in q0["reward"], (g0, st["gold"], q0["reward"]))
+    check("mission completion is announced", ("미션" in toast_txt) or ("mission" in toast_txt.lower()), toast_txt[:70])
+    check("mission rows show a numeric progress", pg.evaluate("document.querySelectorAll('#questList .q-p').length") == 2)
+
     if not QUICK:
         # stage a rich battle for the delivery screenshot
         pg.evaluate("SB.debug.shotScene()")
@@ -230,6 +325,9 @@ def run_mobile(p, errors):
         pg.wait_for_timeout(1150)
     st = pg.evaluate("SB.debug.state()")
     check("mobile: touch spin summons units", len(st["units"]) > 0, len(st["units"]))
+    check("mobile: live missions are on screen",
+          pg.is_visible("#missionBar") and pg.evaluate("document.querySelectorAll('#missionBar .mb-item').length") == 2,
+          pg.evaluate("document.getElementById('missionBar').innerText"))
 
     ov = overflow(pg)
     check("mobile game: no horizontal overflow", ov["scrollW"] <= ov["innerW"] and not ov["bad"], ov)

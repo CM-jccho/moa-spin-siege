@@ -39,6 +39,11 @@
       </div>
     </div>
 
+    <div class="campaign" id="campaign" aria-hidden="true">
+      <div class="cmp-track" id="cmpTrack"></div>
+      <span class="cmp-label" id="cmpLabel">성문 초소</span>
+    </div>
+
     <div class="hud">
       <div class="hud-chip hp-chip" title="HP">
         <svg class="ico" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 4.2-2.9 7.6-7 9-4.1-1.4-7-4.8-7-9V6l7-3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 8v7M9.4 10.4h5.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -102,6 +107,20 @@
     </aside>
 
     <div class="floater-layer" id="floaters"></div>
+    <div class="mission-bar" id="missionBar" hidden></div>
+
+    <div class="combo-layer" id="comboLayer" aria-hidden="true"></div>
+
+    <div class="coach" id="coachCard" hidden>
+      <span class="coach-title"><i class="coach-spark" aria-hidden="true"></i><span data-i18n="guide.title">이렇게 하면 돼요</span></span>
+      <ol class="coach-list">
+        <li id="coachS1"><span data-i18n="guide.s1">① 스핀을 눌러 병사 소환</span></li>
+        <li id="coachS2"><span data-i18n="guide.s2">② 같은 병사는 자동으로 합체·승급</span></li>
+        <li id="coachS3"><span data-i18n="guide.s3">③ 릴을 눌러 결과 고정(HOLD)</span></li>
+      </ol>
+      <span class="coach-foot" data-i18n="guide.footer">릴 1·2·3 = 위에서부터 라인 1·2·3</span>
+      <button id="coachClose" class="coach-x" aria-label="close">×</button>
+    </div>
   </main>
 
   <!-- ================= SLOT PANEL ================= -->
@@ -124,8 +143,8 @@
           <span class="spin-sub"><i class="pip" id="pip0"></i><i class="pip" id="pip1"></i><i class="pip" id="pip2"></i><i class="pip" id="pip3"></i></span>
         </button>
         <div class="side-btns">
-          <button id="rerollBtn" class="mini-btn">
-            <span data-i18n="slot.reroll">리롤</span><b id="rerollCount">3</b>
+          <button id="rerollBtn" class="mini-btn reroll-btn">
+            <span data-i18n="slot.reroll">리롤</span><b id="rerollCost" class="cost">10G</b>
           </button>
           <button id="autoBtn" class="mini-btn auto">
             <span data-i18n="slot.auto">자동</span><i id="autoDot" class="dot"></i>
@@ -180,6 +199,10 @@
     <div class="panel-card">
       <h2 data-i18n="ui.pause">일시정지</h2>
       <div class="panel-stats" id="pauseStats"></div>
+      <div class="cmp-map-wrap">
+        <span class="cmp-map-title" data-i18n="zone.map">전장 진행</span>
+        <ol class="cmp-map" id="pauseMap"></ol>
+      </div>
       <button id="btnResume" class="primary-btn"><span data-i18n="ui.resume">계속</span></button>
       <button id="btnQuit" class="ghost-btn"><span data-i18n="ui.menu">메인 메뉴</span></button>
     </div>
@@ -206,6 +229,7 @@
         <li><b data-i18n="howto.s4t">홀드 / 리롤</b><span data-i18n="howto.s4d">릴을 눌러 홀드하고, 리롤 토큰으로 결과를 다시 돌립니다.</span></li>
         <li><b data-i18n="howto.s5t">유물</b><span data-i18n="howto.s5d">웨이브 클리어마다 유물 3개 중 하나를 골라 시너지를 만드세요.</span></li>
       </ol>
+      <p class="lane-note" data-i18n="guide.footer">릴 1·2·3 = 위에서부터 라인 1·2·3</p>
       <button id="btnHowtoClose" class="primary-btn"><span data-i18n="ui.close">닫기</span></button>
     </div>
   </div>
