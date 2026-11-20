@@ -224,6 +224,8 @@ python3 test/balance.py     # 헤드리스 밸런스 시뮬레이션 (dumb vs sm
 - `screenshots/slot-defense-desktop.png` (1440×900)
 - `screenshots/slot-defense-mobile.png` (390×844)
 - `screenshots/slot-defense-menu.png` (타이틀)
+- `screenshots/moa-spin-siege-v131-codex.png` (하단 슬롯 도감 클릭 → 모달·웨이브 정지)
+- `screenshots/moa-spin-siege-v131-ordnance.png` (⚡ 즉시 발동) · `moa-spin-siege-v131-mobile.png` (모바일 하단 컨트롤)
 - `screenshots/moa-spin-siege-v2-desktop.png` · `moa-spin-siege-v2-mobile.png` (v1.1 타격 연출)
 - `screenshots/moa-spin-siege-v2-guide.png` · `moa-spin-siege-v2-mobile-guide.png` (초보자 가이드)
 
