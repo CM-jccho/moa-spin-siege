@@ -593,7 +593,7 @@ window.SB = window.SB || {};
 
   /* ================= WAVES ================= */
   let bossCounter = 0;
-  const BOSS_NAMES = ['GORTHAK', 'MORDRAX', 'VEXARION', 'KRAAGOR', 'NYXUL'];
+  const BOSS_NAMES = ['Gorthak', 'Mordrax', 'Vexarion', 'Kraagor', 'Nyxul'];
 
   function startWave(n) {
     if (G.state !== 'playing') return;
@@ -896,7 +896,8 @@ window.SB = window.SB || {};
     cell.setAttribute('data-sym', sym);
     if (img.getAttribute('src') !== url) img.setAttribute('src', url);
     img.alt = sym;
-    nm.textContent = u ? I.t('unit.' + sym) : '';
+    const unitLabel = u ? I.t('unit.' + sym) : '';
+    nm.textContent = unitLabel.indexOf('unit.') === 0 ? '' : unitLabel;
     const target = unitRar(sym);
     if (rar.parentNode.getAttribute('data-rar') !== target) rar.parentNode.setAttribute('data-rar', target);
   }
@@ -910,7 +911,8 @@ window.SB = window.SB || {};
       r.cells.forEach(function (cell) {
         const sym = cell.getAttribute('data-sym');
         if (!sym) return;
-        cell.querySelector('.nm').textContent = I.t('unit.' + sym);
+        const label = I.t('unit.' + sym);
+        cell.querySelector('.nm').textContent = label.indexOf('unit.') === 0 ? '' : label;
         cell.querySelector('img').alt = sym;
       });
       applyReelTransform(i);

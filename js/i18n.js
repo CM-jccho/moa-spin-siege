@@ -11,7 +11,7 @@ window.SB = window.SB || {};
   const ko = {
     'app.subtitle': 'SIEGE',
     'app.tagline': '슬롯을 돌려 군단을 소환하라',
-    'app.made': 'Web Audio · 오프라인 플레이 · v1.3.1',
+    'app.made': 'Web Audio, 오프라인 플레이, v1.3.1',
 
     'ui.play': '게임 시작', 'ui.howto': '플레이 방법', 'ui.close': '닫기',
     'ui.menu': '메인 메뉴', 'ui.pause': '일시정지', 'ui.resume': '계속',
@@ -149,17 +149,17 @@ window.SB = window.SB || {};
     'deck.trialNote': '전설 슬롯은 첫 게임 1–2웨이브에서 1회 무료로 체험할 수 있습니다.',
     'deck.vipNote': 'VIP 해금 완료 — 전설 슬롯이 덱에 편성되어 있습니다.',
     'deck.lockedNote': '전설 슬롯은 VIP 팩 코드로 편성됩니다. 체험은 게임당 1회입니다.',
-    'revive.kicker': '조금만 더!', 'revive.free': '⚡ 낙뢰 보급 받고 웨이브 이어하기',
+    'revive.kicker': '조금만 더!', 'revive.free': '낙뢰 보급 받고 웨이브 이어하기',
     'revive.note': '광고 데모 · 이번 런 1회 무료', 'revive.vip': '전설 슬롯으로 이어하기',
     'revive.vipLocked': '전설 슬롯 해금하고 재도전', 'revive.ok': '성벽 복구! 낙뢰가 쏟아진다',
     'revive.used': '무료 보급을 이미 사용했습니다',
-    'footer.hint': 'SPACE: 스핀 · 1/2/3: 홀드 · M: 음소거 · 릴 1·2·3 = 라인 1·2·3'
+    'footer.hint': 'Space 스핀, 1/2/3 홀드, M 음소거, 릴 1·2·3 = 라인 1·2·3'
   };
 
   const en = {
     'app.subtitle': 'SIEGE',
     'app.tagline': 'Spin the reels. Summon the legion.',
-    'app.made': 'Web Audio · Offline play · v1.3.1',
+    'app.made': 'Web Audio, offline play, v1.3.1',
 
     'ui.play': 'Play now', 'ui.howto': 'How to play', 'ui.close': 'Close',
     'ui.menu': 'Main menu', 'ui.pause': 'Paused', 'ui.resume': 'Resume',
@@ -297,17 +297,17 @@ window.SB = window.SB || {};
     'deck.trialNote': 'Legendary slots can be tried once, free, during waves 1-2 of your first game.',
     'deck.vipNote': 'VIP unlocked — legendary slots are equipped in your deck.',
     'deck.lockedNote': 'Legendary slots are added with a VIP pack code. One trial per game.',
-    'revive.kicker': 'SO CLOSE!', 'revive.free': '⚡ Take a lightning drop and continue',
+    'revive.kicker': 'SO CLOSE!', 'revive.free': 'Take a lightning drop and continue',
     'revive.note': 'demo · free once this run', 'revive.vip': 'Continue with legendary slots',
     'revive.vipLocked': 'Unlock legendary slots and retry', 'revive.ok': 'Wall restored! Lightning falls',
     'revive.used': 'The free drop is already used',
-    'footer.hint': 'SPACE: spin · 1/2/3: hold · M: mute · reels 1·2·3 = lanes 1·2·3'
+    'footer.hint': 'Space: spin, 1/2/3: hold, M: mute, reels 1·2·3 = lanes 1·2·3'
   };
 
   const zh = {
     'app.subtitle': 'SIEGE',
     'app.tagline': '转动老虎机，召唤你的军团',
-    'app.made': 'Web Audio · 离线可玩 · v1.3.1',
+    'app.made': 'Web Audio, 离线可玩, v1.3.1',
 
     'ui.play': '开始游戏', 'ui.howto': '玩法说明', 'ui.close': '关闭',
     'ui.menu': '主菜单', 'ui.pause': '暂停', 'ui.resume': '继续',
@@ -445,17 +445,17 @@ window.SB = window.SB || {};
     'deck.trialNote': '首局游戏第 1-2 波可免费体验一次传说转轮。',
     'deck.vipNote': 'VIP 已解锁——传说转轮已编入卡组。',
     'deck.lockedNote': '传说转轮通过 VIP 礼包代码编成。每局可体验一次。',
-    'revive.kicker': '就差一点！', 'revive.free': '⚡ 领取落雷补给，继续这一波',
+    'revive.kicker': '就差一点！', 'revive.free': '领取落雷补给，继续这一波',
     'revive.note': '演示 · 本局免费一次', 'revive.vip': '用传说转轮继续',
     'revive.vipLocked': '解锁传说转轮再挑战', 'revive.ok': '城墙修复！落雷倾泻',
     'revive.used': '本局免费补给已使用',
-    'footer.hint': '空格：旋转 · 1/2/3：锁定 · M：静音 · 转轮 1·2·3 = 第 1·2·3 路'
+    'footer.hint': 'Space: 旋转, 1/2/3: 锁定, M: 静音, 转轮 1·2·3 = 第 1·2·3 路'
   };
 
   const ja = {
     'app.subtitle': 'SIEGE',
     'app.tagline': 'スロットを回して軍団を召喚せよ',
-    'app.made': 'Web Audio · オフライン対応 · v1.3.1',
+    'app.made': 'Web Audio, オフライン対応, v1.3.1',
 
     'ui.play': 'ゲーム開始', 'ui.howto': '遊び方', 'ui.close': '閉じる',
     'ui.menu': 'メインメニュー', 'ui.pause': '一時停止', 'ui.resume': '再開',
@@ -593,11 +593,11 @@ window.SB = window.SB || {};
     'deck.trialNote': '伝説スロットは最初のゲームの1〜2ウェーブで1回無料体験できます。',
     'deck.vipNote': 'VIP解放済み — 伝説スロットがデッキに編成されています。',
     'deck.lockedNote': '伝説スロットはVIPパックコードで編成されます。体験は1ゲーム1回。',
-    'revive.kicker': 'あと少し！', 'revive.free': '⚡ 落雷補給でウェーブを続ける',
+    'revive.kicker': 'あと少し！', 'revive.free': '落雷補給でウェーブを続ける',
     'revive.note': 'デモ · 今回のラン1回無料', 'revive.vip': '伝説スロットで続ける',
     'revive.vipLocked': '伝説スロットを解放して再挑戦', 'revive.ok': '城壁復旧！落雷が降り注ぐ',
     'revive.used': '無料補給は使用済みです',
-    'footer.hint': 'SPACE: スピン · 1/2/3: 固定 · M: ミュート · リール1·2·3 = レーン1·2·3'
+    'footer.hint': 'Space: スピン, 1/2/3: 固定, M: ミュート, リール1·2·3 = レーン1·2·3'
   };
 
   const DICT = { ko, en, zh, ja };
