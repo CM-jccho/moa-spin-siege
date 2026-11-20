@@ -345,15 +345,16 @@ def run_desktop(p, errors):
           and pg.evaluate("document.body.classList.contains('frenzy')"))
 
     # --- v1.3 ordnance buttons: mission-earned casts ---
+    have = pg.evaluate("SB.debug.state()")["ord"]["bolt"]
     pg.evaluate("SB.debug.ord('bolt', 1)")
     pg.wait_for_timeout(180)
-    check("earned lightning shows on its button", pg.inner_text("#ordBolt").strip() == "1", pg.inner_text("#ordBolt"))
+    check("earned lightning shows on its button", pg.inner_text("#ordBolt").strip() == str(have + 1), pg.inner_text("#ordBolt"))
     pg.evaluate("SB.debug.arena(); SB.debug.forceEnemies(5,'goblin')")
     pg.wait_for_timeout(150)
     n0 = len(pg.evaluate("SB.debug.state()")["enemies"])
     pg.click("#btnBolt")
     pg.wait_for_timeout(400)
-    check("ordnance button spends a charge", pg.evaluate("SB.debug.state()")['ord']['bolt'] == 0 and n0 > 0, n0)
+    check("ordnance button spends a charge", pg.evaluate("SB.debug.state()")['ord']['bolt'] == have and n0 > 0, n0)
 
     # --- v1.3 slot codex (deck) ---
     pg.click("#btnPause")
